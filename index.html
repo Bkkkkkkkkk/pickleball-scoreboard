@@ -81,19 +81,22 @@
     .util-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
     .btn-util { background: #334155; font-size: 13px; padding: 10px; }
 
-    /* 彈窗系統（進房選模式 / 名單 / 勝利動畫） */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(6px); display: flex; justify-content: center; align-items: center; z-index: 100; padding: 16px; }
+    /* 彈窗系統（房號入口 / 開局設定 / 勝利動畫） */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(6px); display: flex; justify-content: center; align-items: center; z-index: 100; padding: 16px; }
     .modal-overlay.hidden { display: none; }
     .modal-card { background: #1e293b; border: 1px solid #475569; border-radius: 16px; max-width: 520px; width: 100%; padding: 22px; max-height: 92vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
     .modal-title { font-size: 20px; font-weight: 900; margin-bottom: 14px; color: var(--accent); text-align: center; }
 
-    .room-setup-box { background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 12px; margin-bottom: 14px; }
-    .room-input-row { display: flex; gap: 6px; align-items: center; }
-    .room-input-row input { flex: 1; font-weight: bold; color: #38bdf8; letter-spacing: 0.5px; }
-    .btn-room-tool { background: #334155; color: #fff; border: none; padding: 9px 11px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; white-space: nowrap; }
-    .btn-room-tool.primary { background: #0284c7; }
-    .btn-room-tool:active { transform: scale(0.96); }
-    .room-hint { font-size: 11px; color: #94a3b8; margin-top: 6px; line-height: 1.4; }
+    /* 房號入口卡片 */
+    .lobby-section { background: #0f172a; border: 1px solid #334155; border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+    .lobby-section h3 { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+    .lobby-section p { font-size: 12px; color: #94a3b8; margin-bottom: 12px; line-height: 1.45; }
+    .new-room-preview { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #1e293b; border: 1px dashed #64748b; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
+    .new-room-code { font-size: 18px; font-weight: 900; color: #38bdf8; letter-spacing: 1px; }
+    .join-row { display: flex; gap: 8px; }
+    .join-row input { flex: 1; font-size: 15px; font-weight: bold; color: #facc15; }
+    .btn-join { background: #0284c7; color: #fff; border: none; padding: 10px 16px; border-radius: 8px; font-size: 14px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+    .btn-join:active { transform: scale(0.96); }
 
     .mode-cards { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
     .mode-option { background: #0f172a; border: 2px solid #334155; border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: 0.15s; }
@@ -108,6 +111,7 @@
     .checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; color: #e2e8f0; }
 
     .btn-primary { width: 100%; background: var(--accent); color: #000; border: none; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: 900; cursor: pointer; margin-top: 6px; }
+    .btn-primary:active { transform: scale(0.98); }
 
     /* 全螢幕勝利慶祝動畫 */
     .victory-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.94); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 200; text-align: center; padding: 20px; animation: fadeIn 0.3s ease-out; }
@@ -138,7 +142,7 @@
   <header>
     <div class="room-badge">
       <span id="conn-dot" class="status-dot"></span>
-      <span>房號：<strong id="room-label"></strong></span>
+      <span>房號：<strong id="room-label">未進房</strong></span>
       <button class="btn-share-mini" onclick="shareRoomLink()">🔗 分享</button>
       <span id="mode-badge" style="color:#facc15; font-weight:bold; margin-left:4px;"></span>
     </div>
@@ -148,6 +152,7 @@
       <button onclick="toggleSwap()">⇄ 左右換邊</button>
       <button onclick="toggleVoice()">🔊 語音:<span id="voice-status">關</span></button>
       <button onclick="requestWakeLock()">💡 防休眠:<span id="wakelock-status">關</span></button>
+      <button onclick="openLobbyModal()" style="background:#334155;">🚪 換房號</button>
       <button onclick="openSetupModal()" style="background:#0284c7;">⚙️ 開局設定</button>
     </div>
   </header>
@@ -200,21 +205,38 @@
     </div>
   </div>
 
-  <!-- 進房／開局模式選擇彈窗 -->
+  <!-- 步驟 1：進房入口畫面（開新房 vs 加入房號） -->
+  <div id="lobby-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-title">🏓 匹克球雲端記分板</div>
+
+      <!-- 選項 A：開新房 -->
+      <div class="lobby-section">
+        <h3>✨ 開新房（自己開一組新場地）</h3>
+        <p>自動產生獨立房號，避免與其他地方的球友撞房；進入後可設定比賽模式與名單。</p>
+        <div class="new-room-preview">
+          <span id="lobby-new-room-code" class="new-room-code">pb-0000</span>
+          <button type="button" class="btn-room-tool" onclick="refreshLobbyNewRoom()">🎲 換一組</button>
+        </div>
+        <button type="button" class="btn-primary" onclick="createAndEnterNewRoom()">🚀 建立新房並設定開局</button>
+      </div>
+
+      <!-- 選項 B：加入房號 -->
+      <div class="lobby-section" style="margin-bottom:0;">
+        <h3>🤝 加入房號（跟同場球友連同一個房間）</h3>
+        <p>輸入或貼上球友分享的房號，直接同步看大螢幕或輪流當裁判。</p>
+        <div class="join-row">
+          <input type="text" id="lobby-join-input" placeholder="輸入房號，例如 pb-4829">
+          <button type="button" class="btn-join" onclick="joinExistingRoom()">加入房間</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 步驟 2：開局模式與名單設定彈窗 -->
   <div id="setup-modal" class="modal-overlay hidden">
     <div class="modal-card">
-      <div class="modal-title">🏓 場地房號與比賽設定</div>
-
-      <!-- 房號管理區塊 -->
-      <div class="room-setup-box">
-        <label style="display:block; font-size:13px; color:#cbd5e1; margin-bottom:6px; font-weight:bold;">場地專屬房號（避免與其他場地撞房）</label>
-        <div class="room-input-row">
-          <input type="text" id="opt-room-id" placeholder="輸入自訂房號">
-          <button type="button" class="btn-room-tool" onclick="generateRandomRoomInModal()">🎲 隨機新房號</button>
-          <button type="button" class="btn-room-tool primary" onclick="shareRoomLinkFromModal()">🔗 分享連結</button>
-        </div>
-        <div class="room-hint">💡 產生新房號後點「分享連結」傳給同場球友，大家點開即可同步看分或輪流當裁判；超過 24 小時未使用的舊房號會自動清理。</div>
-      </div>
+      <div class="modal-title">⚙️ 開局模式與名單設定（<span id="setup-room-tag"></span>）</div>
 
       <div class="mode-cards">
         <div class="mode-option selected" data-mode="standard" onclick="selectModeCard('standard')">
@@ -291,21 +313,29 @@
     }
 
     function sanitizeRoomId(raw) {
-      const cleaned = (raw || '').trim().replace(/[.#$\[\]\/]/g, '-');
-      return cleaned || createRandomRoomCode();
+      return (raw || '').trim().replace(/[.#$\[\]\/]/g, '-');
     }
 
-    function updateRoomUrlAndStorage(roomId) {
-      localStorage.setItem(STORAGE_ROOM_KEY, roomId);
-      const url = new URL(window.location.href);
-      url.searchParams.set('room', roomId);
-      window.history.replaceState({}, '', url.toString());
-      document.getElementById('room-label').innerText = roomId;
+    function setActiveRoom(roomId, syncUrl = true) {
+      ROOM_ID = roomId;
+      document.getElementById('room-label').innerText = roomId || '未進房';
+      document.getElementById('setup-room-tag').innerText = roomId || '';
+      if (roomId) {
+        localStorage.setItem(STORAGE_ROOM_KEY, roomId);
+        if (syncUrl) {
+          const url = new URL(window.location.href);
+          url.searchParams.set('room', roomId);
+          window.history.replaceState({}, '', url.toString());
+        }
+      }
     }
 
     const urlParams = new URLSearchParams(window.location.search);
-    let ROOM_ID = sanitizeRoomId(urlParams.get('room') || localStorage.getItem(STORAGE_ROOM_KEY) || createRandomRoomCode());
-    updateRoomUrlAndStorage(ROOM_ID);
+    const initialParamRoom = sanitizeRoomId(urlParams.get('room'));
+    let ROOM_ID = initialParamRoom || '';
+    if (ROOM_ID) {
+      setActiveRoom(ROOM_ID, true);
+    }
 
     let selectedSetupMode = 'standard';
     let voiceEnabled = false;
@@ -329,6 +359,10 @@
     }
 
     async function copyOrShareUrl(roomId) {
+      if (!roomId) {
+        showToast('請先開新房或加入房號');
+        return;
+      }
       const shareUrl = getShareUrl(roomId);
       if (navigator.share) {
         try {
@@ -352,16 +386,44 @@
       copyOrShareUrl(ROOM_ID);
     }
 
-    function shareRoomLinkFromModal() {
-      const inputRoom = sanitizeRoomId(document.getElementById('opt-room-id').value);
-      document.getElementById('opt-room-id').value = inputRoom;
-      copyOrShareUrl(inputRoom);
+    // --- 房號入口畫面控制 ---
+    function openLobbyModal() {
+      document.getElementById('setup-modal').classList.add('hidden');
+      document.getElementById('victory-overlay').classList.add('hidden');
+      refreshLobbyNewRoom();
+      const savedRoom = localStorage.getItem(STORAGE_ROOM_KEY) || '';
+      document.getElementById('lobby-join-input').value = ROOM_ID || savedRoom;
+      document.getElementById('lobby-modal').classList.remove('hidden');
     }
 
-    function generateRandomRoomInModal() {
-      const newCode = createRandomRoomCode();
-      document.getElementById('opt-room-id').value = newCode;
-      showToast(`🎲 已產生新房號：${newCode}`);
+    function closeLobbyModal() {
+      document.getElementById('lobby-modal').classList.add('hidden');
+    }
+
+    function refreshLobbyNewRoom() {
+      document.getElementById('lobby-new-room-code').innerText = createRandomRoomCode();
+    }
+
+    async function createAndEnterNewRoom() {
+      const freshCode = createRandomRoomCode();
+      setActiveRoom(freshCode, true);
+      currentState.initialized = false;
+      closeLobbyModal();
+      openSetupModal();
+      showToast(`✨ 已產生新房號 [${freshCode}]，請設定模式並開局`);
+    }
+
+    async function joinExistingRoom() {
+      const inputVal = sanitizeRoomId(document.getElementById('lobby-join-input').value);
+      if (!inputVal) {
+        showToast('請先輸入房號');
+        return;
+      }
+      setActiveRoom(inputVal, true);
+      currentState.initialized = false;
+      closeLobbyModal();
+      showToast(`🤝 正在連線至房號 [${inputVal}]...`);
+      await syncLoop(true);
     }
 
     // --- 自動清理超過 24 小時沒動靜的過期房間 ---
@@ -379,7 +441,7 @@
 
         const deletePromises = [];
         for (const [roomKey, roomData] of Object.entries(rooms)) {
-          if (roomKey === ROOM_ID) continue; // 永遠不刪目前正在使用的房間
+          if (roomKey === ROOM_ID) continue;
           const updatedAt = roomData && roomData.state && typeof roomData.state.updatedAt === 'number'
             ? roomData.state.updatedAt
             : 0;
@@ -392,9 +454,7 @@
         if (deletePromises.length > 0) {
           await Promise.allSettled(deletePromises);
         }
-      } catch (e) {
-        // 清理失敗不影響正常計分
-      }
+      } catch (e) {}
     }
 
     // 預設完整賽局狀態
@@ -459,9 +519,14 @@
 
     // --- 開局模式設定視窗 ---
     function openSetupModal() {
+      if (!ROOM_ID) {
+        openLobbyModal();
+        return;
+      }
+      document.getElementById('lobby-modal').classList.add('hidden');
       document.getElementById('victory-overlay').classList.add('hidden');
+      document.getElementById('setup-room-tag').innerText = ROOM_ID;
       document.getElementById('setup-modal').classList.remove('hidden');
-      document.getElementById('opt-room-id').value = ROOM_ID;
       if (currentState.players && currentState.players.length > 0) {
         document.getElementById('opt-players').value = currentState.players.map(p => p.name).join(', ');
       }
@@ -516,13 +581,11 @@
       }
     }
 
-    // 建立全新賽局並同步至 Firebase（含房號切換）
+    // 建立全新賽局並同步至 Firebase
     async function startNewMatchFromSetup() {
-      const targetRoom = sanitizeRoomId(document.getElementById('opt-room-id').value);
-      const roomChanged = targetRoom !== ROOM_ID;
-      ROOM_ID = targetRoom;
-      updateRoomUrlAndStorage(ROOM_ID);
-
+      if (!ROOM_ID) {
+        setActiveRoom(createRandomRoomCode(), true);
+      }
       sideChangeNotified = false;
       let next = {
         initialized: true,
@@ -562,13 +625,13 @@
       currentState = next;
       render(currentState, false);
       await saveStateToFirebase(currentState);
-      if (roomChanged) cleanupExpiredRooms();
+      cleanupExpiredRooms();
       showToast(`🚀 已在房號 [${ROOM_ID}] 開啟新賽局`);
     }
 
-    // 勝利後進入下一場（先讀取最新雲端狀態再輪替，防止多人同時點擊重複推進）
+    // 勝利後進入下一場
     async function handleNextMatch() {
-      if (isActionBusy) return;
+      if (isActionBusy || !ROOM_ID) return;
       setBusyLock(true);
       try {
         const latest = await fetchLatestStateFromFirebase() || currentState;
@@ -695,7 +758,7 @@
     // --- 畫面渲染與語音播報 ---
     function render(state, speak = false) {
       const modeMap = { standard: '正規賽 (11分)', casual_seq: `休閒依序 (${state.targetScore}分)`, casual_rand: `休閒亂數 (${state.targetScore}分)` };
-      document.getElementById('mode-badge').innerText = modeMap[state.mode] || '';
+      document.getElementById('mode-badge').innerText = state.initialized ? (modeMap[state.mode] || '') : '';
 
       document.getElementById('name-a').innerText = state.teamAName || '藍隊';
       document.getElementById('name-b').innerText = state.teamBName || '紅隊';
@@ -735,9 +798,8 @@
         document.getElementById('ctrl-title-a').innerText = `紅隊發球中 (已鎖定)`;
       }
 
-      // 休閒模式狀態列
       const rotBar = document.getElementById('rotation-bar');
-      if (state.mode !== 'standard' && state.players && state.players.length > 0) {
+      if (state.initialized && state.mode !== 'standard' && state.players && state.players.length > 0) {
         rotBar.classList.add('visible');
         document.getElementById('next-match-text').innerText = state.nextPreviewText || '';
         const pillsHtml = state.players.map((p, idx) => {
@@ -752,21 +814,19 @@
         rotBar.classList.remove('visible');
       }
 
-      // Deuce 與 6 分換邊提示
       const alertBanner = document.getElementById('alert-banner');
-      if (state.winByTwo && state.scoreA >= state.targetScore - 1 && state.scoreB >= state.targetScore - 1 && !state.winner) {
+      if (state.initialized && state.winByTwo && state.scoreA >= state.targetScore - 1 && state.scoreB >= state.targetScore - 1 && !state.winner) {
         alertBanner.innerText = '⚡ DEUCE！需領先對手 2 分獲勝 ⚡';
         alertBanner.classList.add('visible');
-      } else if (state.mode === 'standard' && state.sideChangeAt6 && (state.scoreA === 6 || state.scoreB === 6) && !sideChangeNotified) {
+      } else if (state.initialized && state.mode === 'standard' && state.sideChangeAt6 && (state.scoreA === 6 || state.scoreB === 6) && !sideChangeNotified) {
         alertBanner.innerText = '🔄 已達 6 分！若為決勝局請交換場地（可點上方「左右換邊」）';
         alertBanner.classList.add('visible');
       } else {
         alertBanner.classList.remove('visible');
       }
 
-      // 勝利全螢幕動畫
       const victoryOverlay = document.getElementById('victory-overlay');
-      if (state.winner) {
+      if (state.initialized && state.winner) {
         const winTeamName = state.winner === 'A' ? state.teamAName : state.teamBName;
         document.getElementById('victory-title').innerText = `🎉 ${winTeamName} 獲勝！`;
         document.getElementById('victory-sub').innerText = `最終比數 ${state.scoreA} : ${state.scoreB}`;
@@ -776,7 +836,6 @@
         victoryOverlay.classList.add('hidden');
       }
 
-      // 語音播報
       if (speak && voiceEnabled && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         let text = '';
@@ -794,13 +853,14 @@
       }
     }
 
-    // --- Firebase 雲端同步（含多人輪流裁判防衝突） ---
+    // --- Firebase 雲端同步 ---
     function setBusyLock(busy) {
       isActionBusy = busy;
       document.getElementById('remote-controls').classList.toggle('busy', busy);
     }
 
     async function fetchLatestStateFromFirebase() {
+      if (!ROOM_ID) return null;
       try {
         const res = await fetch(`${FIREBASE_DB_URL}/rooms/${encodeURIComponent(ROOM_ID)}/state.json`);
         const data = await res.json();
@@ -813,6 +873,7 @@
     }
 
     async function saveStateToFirebase(state) {
+      if (!ROOM_ID) return;
       try {
         const payload = { ...state, updatedAt: Date.now() };
         await fetch(`${FIREBASE_DB_URL}/rooms/${encodeURIComponent(ROOM_ID)}/state.json`, {
@@ -826,7 +887,7 @@
     }
 
     async function dispatchAction(action) {
-      if (isActionBusy) return;
+      if (isActionBusy || !ROOM_ID) return;
       setBusyLock(true);
       try {
         let normalizedAction = action;
@@ -846,8 +907,15 @@
       }
     }
 
-    async function syncLoop() {
+    async function syncLoop(explicitJoin = false) {
       if (isActionBusy) return;
+      if (!ROOM_ID) {
+        if (document.getElementById('lobby-modal').classList.contains('hidden')) {
+          openLobbyModal();
+        }
+        return;
+      }
+
       try {
         const cmdRes = await fetch(`${FIREBASE_DB_URL}/rooms/${encodeURIComponent(ROOM_ID)}/command.json`);
         const cmd = await cmdRes.json();
@@ -859,7 +927,7 @@
 
         const remoteState = await fetchLatestStateFromFirebase();
         if (!remoteState || !remoteState.initialized) {
-          if (!currentState.initialized && document.getElementById('setup-modal').classList.contains('hidden')) {
+          if (explicitJoin || document.getElementById('setup-modal').classList.contains('hidden')) {
             openSetupModal();
           }
           return;
@@ -871,6 +939,7 @@
                           remoteState.serverNumber !== currentState.serverNumber ||
                           remoteState.servingTeam !== currentState.servingTeam;
           currentState = remoteState;
+          closeLobbyModal();
           closeSetupModal();
           render(currentState, changed);
         }
@@ -879,9 +948,13 @@
       }
     }
 
-    syncLoop();
+    if (!ROOM_ID) {
+      openLobbyModal();
+    } else {
+      syncLoop();
+    }
     cleanupExpiredRooms();
-    setInterval(syncLoop, 800);
+    setInterval(() => syncLoop(false), 800);
   </script>
 </body>
 </html>
