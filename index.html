@@ -24,6 +24,9 @@
     .room-badge { display: flex; align-items: center; gap: 6px; background: #0f172a; padding: 4px 10px; border-radius: 6px; border: 1px solid #334155; }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; }
     .status-dot.offline { background: #ef4444; }
+    .btn-share-mini { background: #0284c7; color: #fff; border: none; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; margin-left: 2px; }
+    .btn-share-mini:active { transform: scale(0.95); }
+
     .header-actions { display: flex; gap: 6px; flex-wrap: wrap; }
     .header-actions button { background: #334155; color: #fff; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; transition: 0.15s; }
     .header-actions button.active { background: var(--accent); color: #000; }
@@ -54,10 +57,11 @@
     .serve-badge { margin-top: 16px; padding: 8px 24px; border-radius: 50px; font-size: 2.2vw; font-weight: 800; background: rgba(0,0,0,0.35); color: rgba(255,255,255,0.45); transition: 0.2s; }
     .serving .serve-badge { background: var(--accent); color: #000; box-shadow: 0 0 24px rgba(250, 204, 21, 0.7); transform: scale(1.05); }
 
-    /* 裁判遙控面板（進攻方防呆設計） */
+    /* 裁判遙控面板（進攻方防呆設計 + 防連點鎖定） */
     .remote-controls { display: none; padding: 12px; background: var(--panel-bg); border-top: 1px solid #334155; flex-direction: column; gap: 10px; }
     body.remote-mode .remote-controls { display: flex; }
     body.remote-mode .score { font-size: 15vw; }
+    .remote-controls.busy { opacity: 0.7; pointer-events: none; }
 
     .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .control-grid.swapped { direction: rtl; }
@@ -83,6 +87,14 @@
     .modal-card { background: #1e293b; border: 1px solid #475569; border-radius: 16px; max-width: 520px; width: 100%; padding: 22px; max-height: 92vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
     .modal-title { font-size: 20px; font-weight: 900; margin-bottom: 14px; color: var(--accent); text-align: center; }
 
+    .room-setup-box { background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 12px; margin-bottom: 14px; }
+    .room-input-row { display: flex; gap: 6px; align-items: center; }
+    .room-input-row input { flex: 1; font-weight: bold; color: #38bdf8; letter-spacing: 0.5px; }
+    .btn-room-tool { background: #334155; color: #fff; border: none; padding: 9px 11px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+    .btn-room-tool.primary { background: #0284c7; }
+    .btn-room-tool:active { transform: scale(0.96); }
+    .room-hint { font-size: 11px; color: #94a3b8; margin-top: 6px; line-height: 1.4; }
+
     .mode-cards { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
     .mode-option { background: #0f172a; border: 2px solid #334155; border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: 0.15s; }
     .mode-option.selected { border-color: var(--accent); background: #172554; }
@@ -106,6 +118,10 @@
     .victory-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
     .victory-actions button { padding: 14px 24px; border-radius: 12px; border: none; font-size: 16px; font-weight: 800; cursor: pointer; }
 
+    /* 輕量提示氣泡 (Toast) */
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.95); color: #facc15; border: 1px solid #facc15; padding: 10px 18px; border-radius: 50px; font-size: 13px; font-weight: bold; z-index: 300; box-shadow: 0 8px 20px rgba(0,0,0,0.5); opacity: 0; pointer-events: none; transition: 0.25s; }
+    .toast.show { opacity: 1; bottom: 32px; }
+
     @keyframes bounce { from { transform: translateY(0) scale(1); } to { transform: translateY(-14px) scale(1.08); } }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
@@ -122,8 +138,9 @@
   <header>
     <div class="room-badge">
       <span id="conn-dot" class="status-dot"></span>
-      <span>場地：<strong id="room-label"></strong></span>
-      <span id="mode-badge" style="color:#facc15; font-weight:bold;"></span>
+      <span>房號：<strong id="room-label"></strong></span>
+      <button class="btn-share-mini" onclick="shareRoomLink()">🔗 分享</button>
+      <span id="mode-badge" style="color:#facc15; font-weight:bold; margin-left:4px;"></span>
     </div>
     <div class="header-actions">
       <button id="btn-display" class="active" onclick="setViewMode('display')">大螢幕看板</button>
@@ -161,7 +178,7 @@
   </div>
 
   <!-- 裁判防呆遙控區（只有進攻方亮燈可按，防守方反灰鎖定） -->
-  <div class="remote-controls">
+  <div id="remote-controls" class="remote-controls">
     <div id="control-grid" class="control-grid">
       <!-- 藍隊控制盒 -->
       <div id="ctrl-a" class="team-ctrl-box active-offense">
@@ -186,7 +203,19 @@
   <!-- 進房／開局模式選擇彈窗 -->
   <div id="setup-modal" class="modal-overlay hidden">
     <div class="modal-card">
-      <div class="modal-title">🏓 選擇比賽模式與規則</div>
+      <div class="modal-title">🏓 場地房號與比賽設定</div>
+
+      <!-- 房號管理區塊 -->
+      <div class="room-setup-box">
+        <label style="display:block; font-size:13px; color:#cbd5e1; margin-bottom:6px; font-weight:bold;">場地專屬房號（避免與其他場地撞房）</label>
+        <div class="room-input-row">
+          <input type="text" id="opt-room-id" placeholder="輸入自訂房號">
+          <button type="button" class="btn-room-tool" onclick="generateRandomRoomInModal()">🎲 隨機新房號</button>
+          <button type="button" class="btn-room-tool primary" onclick="shareRoomLinkFromModal()">🔗 分享連結</button>
+        </div>
+        <div class="room-hint">💡 產生新房號後點「分享連結」傳給同場球友，大家點開即可同步看分或輪流當裁判。</div>
+      </div>
+
       <div class="mode-cards">
         <div class="mode-option selected" data-mode="standard" onclick="selectModeCard('standard')">
           <h4>🏆 正規賽模式（11 分制）</h4>
@@ -246,22 +275,99 @@
     </div>
   </div>
 
+  <!-- 提示訊息框 -->
+  <div id="toast" class="toast"></div>
+
   <script>
     const FIREBASE_DB_URL = "https://pickleball-score-8ec8a-default-rtdb.asia-southeast1.firebasedatabase.app";
+    const STORAGE_ROOM_KEY = "pb_last_room_id";
+
+    function createRandomRoomCode() {
+      const num = Math.floor(1000 + Math.random() * 9000);
+      return `pb-${num}`;
+    }
+
+    function sanitizeRoomId(raw) {
+      const cleaned = (raw || '').trim().replace(/[.#$\[\]\/]/g, '-');
+      return cleaned || createRandomRoomCode();
+    }
+
+    function updateRoomUrlAndStorage(roomId) {
+      localStorage.setItem(STORAGE_ROOM_KEY, roomId);
+      const url = new URL(window.location.href);
+      url.searchParams.set('room', roomId);
+      window.history.replaceState({}, '', url.toString());
+      document.getElementById('room-label').innerText = roomId;
+    }
+
+    // 初始化房號：網址參數 > 本機上次房號 > 自動產生隨機獨立房號
     const urlParams = new URLSearchParams(window.location.search);
-    const ROOM_ID = urlParams.get('room') || 'pb88';
-    document.getElementById('room-label').innerText = ROOM_ID;
+    let ROOM_ID = sanitizeRoomId(urlParams.get('room') || localStorage.getItem(STORAGE_ROOM_KEY) || createRandomRoomCode());
+    updateRoomUrlAndStorage(ROOM_ID);
 
     let selectedSetupMode = 'standard';
     let voiceEnabled = false;
     let wakeLock = null;
     let isSwapped = false;
     let sideChangeNotified = false;
+    let isActionBusy = false; // 防連點鎖定
+
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.innerText = msg;
+      el.classList.add('show');
+      clearTimeout(el._timer);
+      el._timer = setTimeout(() => el.classList.remove('show'), 2600);
+    }
+
+    function getShareUrl(roomId) {
+      const url = new URL(window.location.origin + window.location.pathname);
+      url.searchParams.set('room', roomId);
+      return url.toString();
+    }
+
+    async function copyOrShareUrl(roomId) {
+      const shareUrl = getShareUrl(roomId);
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: `匹克球雲端記分板（房號：${roomId}）`,
+            text: `點連結加入匹克球記分板（房號：${roomId}），可看比分或輪流當裁判：`,
+            url: shareUrl
+          });
+          return;
+        } catch (e) {
+          // 使用者取消分享或裝置不支援時改走複製連結
+        }
+      }
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        showToast(`✅ 已複製房號 [${roomId}] 專屬連結，快貼給球友吧！`);
+      } catch (e) {
+        prompt('請複製以下連結分享給球友：', shareUrl);
+      }
+    }
+
+    function shareRoomLink() {
+      copyOrShareUrl(ROOM_ID);
+    }
+
+    function shareRoomLinkFromModal() {
+      const inputRoom = sanitizeRoomId(document.getElementById('opt-room-id').value);
+      document.getElementById('opt-room-id').value = inputRoom;
+      copyOrShareUrl(inputRoom);
+    }
+
+    function generateRandomRoomInModal() {
+      const newCode = createRandomRoomCode();
+      document.getElementById('opt-room-id').value = newCode;
+      showToast(`🎲 已產生新房號：${newCode}`);
+    }
 
     // 預設完整賽局狀態
     let currentState = {
       initialized: false,
-      mode: 'standard', // 'standard' | 'casual_seq' | 'casual_rand'
+      mode: 'standard',
       targetScore: 11,
       winByTwo: true,
       sideChangeAt6: true,
@@ -271,12 +377,11 @@
       serverNumber: 2,
       teamAName: '藍隊',
       teamBName: '紅隊',
-      // 休閒模式輪替狀態
-      players: [],        // [{ name: '阿凱', gamesPlayed: 0 }]
-      courtSlots: [],     // [idx0, idx1, idx2, idx3] -> [0,1]為藍隊, [2,3]為紅隊，每次退 [3] 補 [0]
-      seqPointer: 0,      // 依序模式指標
+      players: [],
+      courtSlots: [],
+      seqPointer: 0,
       nextPreviewText: '',
-      winner: null,       // null | 'A' | 'B'
+      winner: null,
       history: []
     };
 
@@ -285,6 +390,9 @@
       document.body.classList.toggle('remote-mode', mode === 'remote');
       document.getElementById('btn-display').classList.toggle('active', mode === 'display');
       document.getElementById('btn-remote').classList.toggle('active', mode === 'remote');
+      if (mode === 'remote') {
+        showToast('📱 已切換為裁判遙控模式（只有發球方亮燈可按）');
+      }
     }
 
     function toggleSwap() {
@@ -319,6 +427,7 @@
     function openSetupModal() {
       document.getElementById('victory-overlay').classList.add('hidden');
       document.getElementById('setup-modal').classList.remove('hidden');
+      document.getElementById('opt-room-id').value = ROOM_ID;
       if (currentState.players && currentState.players.length > 0) {
         document.getElementById('opt-players').value = currentState.players.map(p => p.name).join(', ');
       }
@@ -341,14 +450,12 @@
       openSetupModal();
     }
 
-    // 解析名單文字
     function parsePlayers(rawText) {
       const names = rawText.split(/[,，\n]+/).map(s => s.trim()).filter(Boolean);
       const uniqueNames = names.length >= 4 ? names : ['1號', '2號', '3號', '4號', '5號', '6號', '7號', '8號'];
       return uniqueNames.map(name => ({ name, gamesPlayed: 0 }));
     }
 
-    // 從不在場上的球員中，挑「累積場次最少」的候選群組並隨機抽 1 位
     function pickRandomCandidate(players, excludeIndices) {
       const candidates = players
         .map((p, idx) => ({ ...p, idx }))
@@ -361,7 +468,6 @@
       return chosen.idx;
     }
 
-    // 計算下一場預告文字（[0,1] vs [2,3] -> [X,0] vs [1,2]，最右邊 [3] 下場）
     function computeNextPreview(state) {
       if (state.mode === 'standard' || !state.players || state.players.length < 4) return '';
       const p = state.players;
@@ -376,8 +482,12 @@
       }
     }
 
-    // 建立全新賽局並同步至 Firebase
+    // 建立全新賽局並同步至 Firebase（含房號切換）
     async function startNewMatchFromSetup() {
+      const targetRoom = sanitizeRoomId(document.getElementById('opt-room-id').value);
+      ROOM_ID = targetRoom;
+      updateRoomUrlAndStorage(ROOM_ID);
+
       sideChangeNotified = false;
       let next = {
         initialized: true,
@@ -406,7 +516,7 @@
         const players = parsePlayers(document.getElementById('opt-players').value);
         next.players = players;
         next.seqPointer = 0;
-        next.courtSlots = [0, 1, 2, 3]; // 第 1 場固定 1、2 vs 3、4
+        next.courtSlots = [0, 1, 2, 3];
         next.teamAName = `${players[0].name} & ${players[1].name}`;
         next.teamBName = `${players[2].name} & ${players[3].name}`;
         next.nextPreviewText = computeNextPreview(next);
@@ -416,51 +526,59 @@
       currentState = next;
       render(currentState, false);
       await saveStateToFirebase(currentState);
+      showToast(`🚀 已在房號 [${ROOM_ID}] 開啟新賽局`);
     }
 
-    // 勝利後進入下一場（每次退最右邊 [3]，留任 [0,1,2] 往右推一格，最左邊 [0] 補進 1 人）
+    // 勝利後進入下一場（先讀取最新雲端狀態再輪替，防止多人同時點擊重複推進）
     async function handleNextMatch() {
-      let next = JSON.parse(JSON.stringify(currentState));
-      next.scoreA = 0;
-      next.scoreB = 0;
-      next.servingTeam = 'A';
-      next.serverNumber = 2;
-      next.winner = null;
-      next.history = [];
-      sideChangeNotified = false;
+      if (isActionBusy) return;
+      setBusyLock(true);
+      try {
+        const latest = await fetchLatestStateFromFirebase() || currentState;
+        let next = JSON.parse(JSON.stringify(latest));
+        next.scoreA = 0;
+        next.scoreB = 0;
+        next.servingTeam = 'A';
+        next.serverNumber = 2;
+        next.winner = null;
+        next.history = [];
+        sideChangeNotified = false;
 
-      if (next.mode !== 'standard' && next.players.length >= 4) {
-        next.courtSlots.forEach(idx => {
-          if (next.players[idx]) {
-            next.players[idx].gamesPlayed += 1;
+        if (next.mode !== 'standard' && next.players.length >= 4) {
+          next.courtSlots.forEach(idx => {
+            if (next.players[idx]) {
+              next.players[idx].gamesPlayed += 1;
+            }
+          });
+
+          const s0 = next.courtSlots[0];
+          const s1 = next.courtSlots[1];
+          const s2 = next.courtSlots[2];
+          const stayIndices = [s0, s1, s2];
+
+          let incomingIdx = 0;
+          if (next.mode === 'casual_seq') {
+            next.seqPointer = (next.seqPointer - 1 + next.players.length) % next.players.length;
+            incomingIdx = next.seqPointer;
+          } else if (next.mode === 'casual_rand') {
+            incomingIdx = pickRandomCandidate(next.players, stayIndices);
           }
-        });
 
-        const s0 = next.courtSlots[0];
-        const s1 = next.courtSlots[1];
-        const s2 = next.courtSlots[2];
-        const stayIndices = [s0, s1, s2];
+          next.courtSlots = [incomingIdx, s0, s1, s2];
 
-        let incomingIdx = 0;
-        if (next.mode === 'casual_seq') {
-          next.seqPointer = (next.seqPointer - 1 + next.players.length) % next.players.length;
-          incomingIdx = next.seqPointer;
-        } else if (next.mode === 'casual_rand') {
-          incomingIdx = pickRandomCandidate(next.players, stayIndices);
+          const s = next.courtSlots;
+          next.teamAName = `${next.players[s[0]].name} & ${next.players[s[1]].name}`;
+          next.teamBName = `${next.players[s[2]].name} & ${next.players[s[3]].name}`;
+          next.nextPreviewText = computeNextPreview(next);
         }
 
-        next.courtSlots = [incomingIdx, s0, s1, s2];
-
-        const s = next.courtSlots;
-        next.teamAName = `${next.players[s[0]].name} & ${next.players[s[1]].name}`;
-        next.teamBName = `${next.players[s[2]].name} & ${next.players[s[3]].name}`;
-        next.nextPreviewText = computeNextPreview(next);
+        document.getElementById('victory-overlay').classList.add('hidden');
+        currentState = next;
+        render(currentState, false);
+        await saveStateToFirebase(currentState);
+      } finally {
+        setTimeout(() => setBusyLock(false), 400);
       }
-
-      document.getElementById('victory-overlay').classList.add('hidden');
-      currentState = next;
-      render(currentState, false);
-      await saveStateToFirebase(currentState);
     }
 
     function confirmReset() {
@@ -579,7 +697,7 @@
         document.getElementById('ctrl-title-a').innerText = `紅隊發球中 (已鎖定)`;
       }
 
-      // 休閒模式狀態列（顯示已打場次與場上狀態）
+      // 休閒模式狀態列
       const rotBar = document.getElementById('rotation-bar');
       if (state.mode !== 'standard' && state.players && state.players.length > 0) {
         rotBar.classList.add('visible');
@@ -638,7 +756,24 @@
       }
     }
 
-    // --- Firebase 雲端同步 ---
+    // --- Firebase 雲端同步（含多人輪流裁判防衝突） ---
+    function setBusyLock(busy) {
+      isActionBusy = busy;
+      document.getElementById('remote-controls').classList.toggle('busy', busy);
+    }
+
+    async function fetchLatestStateFromFirebase() {
+      try {
+        const res = await fetch(`${FIREBASE_DB_URL}/rooms/${ROOM_ID}/state.json`);
+        const data = await res.json();
+        document.getElementById('conn-dot').classList.remove('offline');
+        return data;
+      } catch (e) {
+        document.getElementById('conn-dot').classList.add('offline');
+        return null;
+      }
+    }
+
     async function saveStateToFirebase(state) {
       try {
         await fetch(`${FIREBASE_DB_URL}/rooms/${ROOM_ID}/state.json`, {
@@ -652,17 +787,28 @@
     }
 
     async function dispatchAction(action) {
-      let normalizedAction = action;
-      if (action === 'POINT_A' || action === 'POINT_B') normalizedAction = 'SCORE';
-      if (action === 'SIDE_OUT') normalizedAction = 'FAULT';
+      if (isActionBusy) return;
+      setBusyLock(true);
+      try {
+        let normalizedAction = action;
+        if (action === 'POINT_A' || action === 'POINT_B') normalizedAction = 'SCORE';
+        if (action === 'SIDE_OUT') normalizedAction = 'FAULT';
 
-      const nextState = processLogic(currentState, normalizedAction);
-      currentState = nextState;
-      render(currentState, true);
-      await saveStateToFirebase(currentState);
+        // 先讀取雲端最新狀態再計算，避免兩支手機輪流裁判時用舊畫面覆蓋新比分
+        const latestRemote = await fetchLatestStateFromFirebase();
+        const baseState = (latestRemote && latestRemote.initialized) ? latestRemote : currentState;
+
+        const nextState = processLogic(baseState, normalizedAction);
+        currentState = nextState;
+        render(currentState, true);
+        await saveStateToFirebase(currentState);
+      } finally {
+        setTimeout(() => setBusyLock(false), 400);
+      }
     }
 
     async function syncLoop() {
+      if (isActionBusy) return;
       try {
         const cmdRes = await fetch(`${FIREBASE_DB_URL}/rooms/${ROOM_ID}/command.json`);
         const cmd = await cmdRes.json();
@@ -672,10 +818,7 @@
           return;
         }
 
-        const stateRes = await fetch(`${FIREBASE_DB_URL}/rooms/${ROOM_ID}/state.json`);
-        const remoteState = await stateRes.json();
-        document.getElementById('conn-dot').classList.remove('offline');
-
+        const remoteState = await fetchLatestStateFromFirebase();
         if (!remoteState || !remoteState.initialized) {
           if (!currentState.initialized && document.getElementById('setup-modal').classList.contains('hidden')) {
             openSetupModal();
