@@ -23,7 +23,32 @@
     body { background-color: var(--bg-color); color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; user-select: none; }
 
     /* 頂部功能列 */
-    header { display: flex; justify-content: space-between; align-items: center; padding: 6px 14px; background: var(--panel-bg); font-size: 13px; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid #1f2937; z-index: 10; }
+    header { display: flex; justify-content: space-between; align-items: center; padding: 6px 14px; background: var(--panel-bg); font-size: 13px; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid #1f2937; z-index: 10; transition: all 0.2s ease; }
+    body.header-hidden header { display: none; }
+
+    /* 頂部列隱藏時的角落喚回按鈕 */
+    .restore-header-btn {
+      display: none;
+      position: fixed;
+      top: 10px;
+      right: 12px;
+      z-index: 25;
+      background: rgba(17, 24, 39, 0.72);
+      backdrop-filter: blur(6px);
+      color: #e5e7eb;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: 8px;
+      padding: 6px 11px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      opacity: 0.55;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .restore-header-btn:hover,
+    .restore-header-btn:active { opacity: 1; transform: scale(0.97); }
+    body.header-hidden .restore-header-btn { display: inline-flex; align-items: center; gap: 5px; }
+
     .room-badge { display: flex; align-items: center; gap: 6px; background: #030712; padding: 4px 10px; border-radius: 6px; border: 1px solid #374151; }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; box-shadow: 0 0 8px #22c55e; }
     .status-dot.offline { background: #ef4444; box-shadow: none; }
@@ -35,7 +60,7 @@
     .header-actions button.active { background: var(--ball-neon); color: #000; border-color: var(--ball-neon); font-weight: 800; }
     .header-actions button.btn-leave { background: #7f1d1d; border-color: #991b1b; color: #fecaca; }
 
-    /* 下一場預告跑馬燈橫幅 */
+    /* 下一場預告單段跑馬燈橫幅（左邊完全消失後才從最右邊出現） */
     .next-marquee-bar {
       display: none;
       align-items: center;
@@ -45,30 +70,29 @@
       overflow: hidden;
       position: relative;
       height: 36px;
+      flex-shrink: 0;
     }
     .next-marquee-bar.visible { display: flex; }
-    .marquee-track {
-      display: flex;
-      width: max-content;
-      animation: marqueeScroll 18s linear infinite;
-    }
-    .next-marquee-bar:hover .marquee-track { animation-play-state: paused; }
     .marquee-item {
+      position: absolute;
+      left: 0;
       white-space: nowrap;
       font-size: clamp(15px, 2vw, 21px);
       font-weight: 900;
       color: #38bdf8;
       letter-spacing: 0.8px;
-      padding-right: 64px;
       text-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
+      will-change: transform;
+      animation: singleMarquee 14s linear infinite;
     }
-    @keyframes marqueeScroll {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
+    .next-marquee-bar:hover .marquee-item { animation-play-state: paused; }
+    @keyframes singleMarquee {
+      0% { transform: translateX(100vw); }
+      100% { transform: translateX(-100%); }
     }
 
     /* 換邊提示橫幅 */
-    .alert-banner { display: none; background: var(--accent); color: #000; text-align: center; font-weight: 900; padding: 5px; font-size: 14px; letter-spacing: 1px; }
+    .alert-banner { display: none; background: var(--accent); color: #000; text-align: center; font-weight: 900; padding: 5px; font-size: 14px; letter-spacing: 1px; flex-shrink: 0; }
     .alert-banner.visible { display: block; }
 
     /* =========================================================
@@ -86,6 +110,7 @@
       position: relative;
       min-height: 0;
     }
+    body.header-hidden .led-stadium-wrap { padding-top: 14px; }
 
     /* 頂部賽事資訊、各局歷史比分與「選手場數」按鈕 */
     .led-top-strip {
@@ -101,6 +126,8 @@
       flex-wrap: wrap;
       flex-shrink: 0;
     }
+    body.header-hidden .led-top-strip { padding-right: 96px; }
+
     .led-top-left {
       display: flex;
       align-items: center;
@@ -331,6 +358,9 @@
       color: #ffffff;
       transition: transform 0.15s ease, text-shadow 0.2s ease;
     }
+    body.header-hidden .led-score {
+      font-size: clamp(128px, 28vw, 340px);
+    }
     .led-side.side-a.serving .led-score {
       color: #e0f2fe;
       text-shadow: 0 0 36px var(--team-a-glow);
@@ -344,6 +374,7 @@
     .remote-controls { display: none; padding: 10px 14px; background: var(--panel-bg); border-top: 1px solid #1f2937; flex-direction: column; gap: 8px; flex-shrink: 0; }
     body.remote-mode .remote-controls { display: flex; }
     body.remote-mode .led-score { font-size: clamp(72px, 15vw, 165px); }
+    body.remote-mode.header-hidden .led-score { font-size: clamp(82px, 17vw, 185px); }
     body.remote-mode .led-stadium-wrap { padding: 8px 12px 12px; }
     .remote-controls.busy { opacity: 0.7; pointer-events: none; }
 
@@ -482,6 +513,9 @@
 </head>
 <body>
 
+  <!-- 頂部列隱藏時的角落喚回按鈕 -->
+  <button id="restore-header-btn" class="restore-header-btn" onclick="toggleHeaderHidden(false)">☰ 工具列</button>
+
   <!-- 頂部控制列 -->
   <header>
     <div class="room-badge">
@@ -496,17 +530,16 @@
       <button onclick="toggleSwap()">⇄ 左右換邊</button>
       <button onclick="toggleVoice()">🔊 語音:<span id="voice-status">關</span></button>
       <button onclick="requestWakeLock()">💡 防休眠:<span id="wakelock-status">關</span></button>
+      <button id="btn-fullscreen" onclick="toggleFullscreenMode()">⛶ 全螢幕</button>
+      <button onclick="toggleHeaderHidden(true)" title="隱藏上方工具列">🙈 藏頂列</button>
       <button onclick="openSetupModal()" style="background:#0284c7; border-color:#0284c7;">⚙️ 開局設定</button>
       <button id="btn-leave-room" class="btn-leave" onclick="leaveCurrentRoom()">🚪 離開房間</button>
     </div>
   </header>
 
-  <!-- 下一場預告跑馬燈橫幅 -->
+  <!-- 下一場預告單段跑馬燈橫幅 -->
   <div id="next-marquee-bar" class="next-marquee-bar">
-    <div class="marquee-track" id="marquee-track">
-      <span class="marquee-item" id="marquee-text-1">下一場預告：計算中...</span>
-      <span class="marquee-item" id="marquee-text-2">下一場預告：計算中...</span>
-    </div>
+    <span class="marquee-item" id="marquee-text">下一場預告：計算中...</span>
   </div>
 
   <!-- 決勝局換邊或 Deuce 提示條 -->
@@ -818,6 +851,62 @@
       el._timer = setTimeout(() => el.classList.remove('show'), 2600);
     }
 
+    // --- 全螢幕與隱藏頂部工具列 ---
+    function isFullscreenActive() {
+      return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+    }
+
+    function toggleHeaderHidden(hide) {
+      document.body.classList.toggle('header-hidden', hide);
+      if (hide) {
+        showToast('🙈 已隱藏頂部列，點右上角「☰ 工具列」可叫回');
+      }
+    }
+
+    async function toggleFullscreenMode() {
+      const btn = document.getElementById('btn-fullscreen');
+      try {
+        if (!isFullscreenActive()) {
+          const el = document.documentElement;
+          if (el.requestFullscreen) {
+            await el.requestFullscreen();
+          } else if (el.webkitRequestFullscreen) {
+            await el.webkitRequestFullscreen();
+          }
+          document.body.classList.add('header-hidden');
+          btn.classList.add('active');
+          showToast('⛶ 已進入全螢幕模式');
+        } else {
+          if (document.exitFullscreen) {
+            await document.exitFullscreen();
+          } else if (document.webkitExitFullscreen) {
+            await document.webkitExitFullscreen();
+          }
+          document.body.classList.remove('header-hidden');
+          btn.classList.remove('active');
+        }
+      } catch (e) {
+        const nextHidden = !document.body.classList.contains('header-hidden');
+        document.body.classList.toggle('header-hidden', nextHidden);
+        btn.classList.toggle('active', nextHidden);
+        showToast(nextHidden ? '⛶ 已切換沉浸式隱藏頂列' : '已恢復頂部列');
+      }
+    }
+
+    function syncFullscreenState() {
+      const active = isFullscreenActive();
+      const btn = document.getElementById('btn-fullscreen');
+      btn.classList.toggle('active', active);
+      if (active) {
+        document.body.classList.add('header-hidden');
+      } else {
+        document.body.classList.remove('header-hidden');
+      }
+    }
+
+    document.addEventListener('fullscreenchange', syncFullscreenState);
+    document.addEventListener('webkitfullscreenchange', syncFullscreenState);
+
     function getShareUrl(roomId) {
       const url = new URL(window.location.origin + window.location.pathname);
       url.searchParams.set('room', roomId);
@@ -1033,6 +1122,7 @@
         openLobbyModal();
         return;
       }
+      document.body.classList.remove('header-hidden');
       document.getElementById('lobby-modal').classList.add('hidden');
       document.getElementById('roster-modal').classList.add('hidden');
       document.getElementById('stats-modal').classList.add('hidden');
@@ -1646,7 +1736,6 @@
       document.getElementById('score-a').innerText = state.scoreA;
       document.getElementById('score-b').innerText = state.scoreB;
 
-      // 渲染各局歷史比分條
       const setListEl = document.getElementById('set-history-list');
       const sets = Array.isArray(state.setHistory) ? state.setHistory : [];
       const historyChips = sets.map((g, idx) =>
@@ -1655,17 +1744,14 @@
       const currentGameNum = sets.length + 1;
       setListEl.innerHTML = `${historyChips}<div class="set-chip current"><span>NOW</span>GAME ${currentGameNum}</div>`;
 
-      // 「選手場數」按鈕顯示條件：休閒模式且有選手名單
       const statsBtn = document.getElementById('btn-player-stats');
       const hasCasualRoster = state.initialized && state.mode !== 'standard' && state.players && state.players.length > 0;
       statsBtn.classList.toggle('visible', hasCasualRoster);
 
-      // 下一場預告跑馬燈橫幅
       const marqueeBar = document.getElementById('next-marquee-bar');
       if (hasCasualRoster && state.nextPreviewText) {
         marqueeBar.classList.add('visible');
-        document.getElementById('marquee-text-1').innerText = `📣 ${state.nextPreviewText} • `;
-        document.getElementById('marquee-text-2').innerText = `📣 ${state.nextPreviewText} • `;
+        document.getElementById('marquee-text').innerText = `📣 ${state.nextPreviewText}`;
       } else {
         marqueeBar.classList.remove('visible');
       }
