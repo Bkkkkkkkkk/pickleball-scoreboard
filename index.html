@@ -322,24 +322,24 @@
       </div>
 
       <div id="roster-casual-body">
-        <!-- 晚到／新增球友 -->
+        <!-- 新增球員 -->
         <div class="add-player-bar">
-          <input type="text" id="new-player-name" placeholder="晚到球友名字／暱稱">
+          <input type="text" id="new-player-name" placeholder="新增球員">
           <button type="button" class="btn-add-player" onclick="addLatePlayer()">＋ 加入名單</button>
         </div>
 
-        <!-- 場上球員離場時指定替補選擇器 -->
+        <!-- 場上球員臨時換下（跳過本場）或離場替補選擇器 -->
         <div id="sub-picker-box" class="sub-picker-box hidden">
           <div style="font-size:13px; font-weight:800; color:#facc15;" id="sub-picker-title"></div>
-          <div style="font-size:11px; color:#cbd5e1; margin-top:2px;">請選擇場下候選人立刻接替上場，或讓其本局打完後再退場：</div>
+          <div style="font-size:11px; color:#cbd5e1; margin-top:2px;" id="sub-picker-desc"></div>
           <div id="sub-picker-buttons" class="sub-picker-buttons"></div>
           <div style="margin-top:8px; display:flex; gap:6px;">
-            <button type="button" class="btn-mini warn" onclick="confirmLeaveAfterCurrentMatch()">本局打完再離場</button>
-            <button type="button" class="btn-mini" onclick="cancelPendingLeave()">取消</button>
+            <button type="button" id="btn-leave-after-match" class="btn-mini warn" onclick="confirmLeaveAfterCurrentMatch()">本局打完再離場</button>
+            <button type="button" class="btn-mini" onclick="cancelPendingSub()">取消</button>
           </div>
         </div>
 
-        <!-- 名單列表（改暱稱、跳過 1 次、離場／歸隊） -->
+        <!-- 名單列表（改暱稱、臨時換下/跳過 1 次、離場/歸隊） -->
         <div id="roster-list" class="roster-list"></div>
 
         <button type="button" class="btn-primary" onclick="saveRosterChanges()">💾 儲存名單變更並同步</button>
@@ -442,7 +442,8 @@
     // 選手名單草稿狀態
     let draftPlayers = [];
     let draftCourtSlots = [];
-    let pendingLeaveSlotPos = null;
+    let pendingSubSlotPos = null;
+    let pendingSubMode = null; // 'skip_once' | 'leave'
 
     function showToast(msg) {
       const el = document.getElementById('toast');
@@ -649,8 +650,7 @@
       }
       document.getElementById('setup-modal').classList.add('hidden');
       document.getElementById('victory-overlay').classList.add('hidden');
-      pendingLeaveSlotPos = null;
-      document.getElementById('sub-picker-box').classList.add('hidden');
+      cancelPendingSub();
 
       const isCasual = currentState.initialized && currentState.mode !== 'standard';
       document.getElementById('roster-not-casual-hint').style.display = isCasual ? 'none' : 'block';
@@ -670,7 +670,7 @@
     }
 
     function closeRosterModal() {
-      pendingLeaveSlotPos = null;
+      cancelPendingSub();
       document.getElementById('roster-modal').classList.add('hidden');
     }
 
@@ -690,10 +690,9 @@
       const input = document.getElementById('new-player-name');
       const name = input.value.trim();
       if (!name) {
-        showToast('請先輸入球友名字或暱稱');
+        showToast('請先輸入球員名字');
         return;
       }
-      // 晚到者對齊目前場外未離場球友的最少場次，避免一進來連續打爆
       const activeBench = draftPlayers.filter((p, idx) => !p.left && !draftCourtSlots.includes(idx));
       const baseGames = activeBench.length > 0
         ? Math.min(...activeBench.map(p => p.gamesPlayed || 0))
@@ -717,12 +716,48 @@
       renderRosterList();
     }
 
+    // 已經排上場的球員臨時要跳過本場（對換場下替補，保留原場次順位）
+    function handleSkipOnCourt(idx) {
+      syncDraftInputsToNames();
+      const target = draftPlayers[idx];
+      if (!target) return;
+
+      const slotPos = draftCourtSlots.indexOf(idx);
+      if (slotPos === -1) return;
+
+      if ((currentState.scoreA > 0 || currentState.scoreB > 0) && !currentState.winner) {
+        if (!confirm(`本局已經開打（${currentState.scoreA} : ${currentState.scoreB}），確定要將「${target.name}」臨時換下嗎？`)) {
+          return;
+        }
+      }
+
+      const availableSubs = draftPlayers
+        .map((p, pIdx) => ({ ...p, pIdx }))
+        .filter(p => !p.left && !draftCourtSlots.includes(p.pIdx))
+        .sort((a, b) => (a.gamesPlayed || 0) - (b.gamesPlayed || 0));
+
+      if (availableSubs.length === 0) {
+        showToast('目前場下沒有其他可替補的球員');
+        return;
+      }
+
+      pendingSubSlotPos = slotPos;
+      pendingSubMode = 'skip_once';
+      const box = document.getElementById('sub-picker-box');
+      document.getElementById('sub-picker-title').innerText = `🔄 「${target.name}」臨時跳過本場，要派誰頂上？`;
+      document.getElementById('sub-picker-desc').innerText = `點選場下替補球員立刻對換；${target.name} 會退回場下休息本場，並保留原累積場次順位。`;
+      document.getElementById('btn-leave-after-match').style.display = 'none';
+      document.getElementById('sub-picker-buttons').innerHTML = availableSubs.map(sub =>
+        `<button type="button" class="btn-mini ok" onclick="confirmSubReplacement(${sub.pIdx})">派 ${escapeHtml(sub.name)} 上場（已打 ${sub.gamesPlayed} 場）</button>`
+      ).join('');
+      box.classList.remove('hidden');
+    }
+
     function handleToggleLeave(idx) {
       syncDraftInputsToNames();
       const target = draftPlayers[idx];
       if (!target) return;
 
-      // 若原本已離場，改為重新歸隊
       if (target.left) {
         target.left = false;
         target.skipCount = 0;
@@ -731,19 +766,22 @@
         return;
       }
 
-      // 若該球友目前在場上，詢問是否立刻由場下指定替補
       const slotPos = draftCourtSlots.indexOf(idx);
       if (slotPos !== -1) {
         const availableSubs = draftPlayers
           .map((p, pIdx) => ({ ...p, pIdx }))
-          .filter(p => !p.left && !draftCourtSlots.includes(p.pIdx));
+          .filter(p => !p.left && !draftCourtSlots.includes(p.pIdx))
+          .sort((a, b) => (a.gamesPlayed || 0) - (b.gamesPlayed || 0));
 
         if (availableSubs.length > 0) {
-          pendingLeaveSlotPos = slotPos;
+          pendingSubSlotPos = slotPos;
+          pendingSubMode = 'leave';
           const box = document.getElementById('sub-picker-box');
           document.getElementById('sub-picker-title').innerText = `🏃 ${target.name} 在場上準備離場，要派誰替補？`;
+          document.getElementById('sub-picker-desc').innerText = `請選擇場下候選人立刻接替上場，或讓其本局打完後再退場：`;
+          document.getElementById('btn-leave-after-match').style.display = 'inline-block';
           document.getElementById('sub-picker-buttons').innerHTML = availableSubs.map(sub =>
-            `<button type="button" class="btn-mini ok" onclick="replaceOnCourtWithSub(${sub.pIdx})">派 ${sub.name} 上場（已打 ${sub.gamesPlayed} 場）</button>`
+            `<button type="button" class="btn-mini ok" onclick="confirmSubReplacement(${sub.pIdx})">派 ${escapeHtml(sub.name)} 上場（已打 ${sub.gamesPlayed} 場）</button>`
           ).join('');
           box.classList.remove('hidden');
           return;
@@ -755,36 +793,51 @@
       renderRosterList();
     }
 
-    function replaceOnCourtWithSub(subIdx) {
-      if (pendingLeaveSlotPos === null) return;
-      const leavingIdx = draftCourtSlots[pendingLeaveSlotPos];
-      if (draftPlayers[leavingIdx]) {
-        draftPlayers[leavingIdx].left = true;
-        draftPlayers[leavingIdx].skipCount = 0;
+    function confirmSubReplacement(subIdx) {
+      if (pendingSubSlotPos === null) return;
+      const outIdx = draftCourtSlots[pendingSubSlotPos];
+      const outName = draftPlayers[outIdx] ? draftPlayers[outIdx].name : '';
+      const subName = draftPlayers[subIdx] ? draftPlayers[subIdx].name : '';
+
+      if (draftPlayers[outIdx]) {
+        if (pendingSubMode === 'leave') {
+          draftPlayers[outIdx].left = true;
+        }
+        draftPlayers[outIdx].skipCount = 0;
       }
-      draftCourtSlots[pendingLeaveSlotPos] = subIdx;
-      pendingLeaveSlotPos = null;
-      document.getElementById('sub-picker-box').classList.add('hidden');
+      if (draftPlayers[subIdx]) {
+        draftPlayers[subIdx].skipCount = 0;
+      }
+
+      draftCourtSlots[pendingSubSlotPos] = subIdx;
+      const modeUsed = pendingSubMode;
+      cancelPendingSub();
       renderRosterList();
-      showToast(`🔄 已由 ${draftPlayers[subIdx].name} 接替上場`);
+
+      if (modeUsed === 'skip_once') {
+        showToast(`🔄 已由 ${subName} 頂替上場（${outName} 跳過本場並保留順位）`);
+      } else {
+        showToast(`🔄 已由 ${subName} 接替上場（${outName} 設為離場）`);
+      }
     }
 
     function confirmLeaveAfterCurrentMatch() {
-      if (pendingLeaveSlotPos === null) return;
-      const leavingIdx = draftCourtSlots[pendingLeaveSlotPos];
+      if (pendingSubSlotPos === null) return;
+      const leavingIdx = draftCourtSlots[pendingSubSlotPos];
       if (draftPlayers[leavingIdx]) {
         draftPlayers[leavingIdx].left = true;
         draftPlayers[leavingIdx].skipCount = 0;
       }
-      pendingLeaveSlotPos = null;
-      document.getElementById('sub-picker-box').classList.add('hidden');
+      cancelPendingSub();
       renderRosterList();
-      showToast('標記為離場，本局結束後將不再排入下一場');
+      showToast('已標記離場，本局結束後將不再排入下一場');
     }
 
-    function cancelPendingLeave() {
-      pendingLeaveSlotPos = null;
-      document.getElementById('sub-picker-box').classList.add('hidden');
+    function cancelPendingSub() {
+      pendingSubSlotPos = null;
+      pendingSubMode = null;
+      const box = document.getElementById('sub-picker-box');
+      if (box) box.classList.add('hidden');
     }
 
     function renderRosterList() {
@@ -803,16 +856,28 @@
         const skipBtnText = (p.skipCount || 0) > 0 ? '取消跳過' : '跳過 1 次';
         const leaveBtnText = p.left ? '重新加入' : '離場';
 
+        let actionBtns = '';
+        if (p.left) {
+          actionBtns = `<button type="button" class="btn-mini ok" onclick="handleToggleLeave(${idx})">${leaveBtnText}</button>`;
+        } else if (isPlaying) {
+          actionBtns = `
+            <button type="button" class="btn-mini warn" onclick="handleSkipOnCourt(${idx})">臨時換下</button>
+            <button type="button" class="btn-mini danger" onclick="handleToggleLeave(${idx})">${leaveBtnText}</button>
+          `;
+        } else {
+          actionBtns = `
+            <button type="button" class="btn-mini warn" onclick="toggleSkipOnce(${idx})">${skipBtnText}</button>
+            <button type="button" class="btn-mini danger" onclick="handleToggleLeave(${idx})">${leaveBtnText}</button>
+          `;
+        }
+
         return `
           <div class="roster-item ${p.left ? 'is-left' : ''}">
             <div class="roster-main">
               <input type="text" class="roster-name-input" data-idx="${idx}" value="${escapeHtml(p.name)}" placeholder="暱稱">
               <div>${statusBadge}</div>
             </div>
-            <div class="roster-actions">
-              ${!p.left && !isPlaying ? `<button type="button" class="btn-mini warn" onclick="toggleSkipOnce(${idx})">${skipBtnText}</button>` : ''}
-              <button type="button" class="btn-mini ${p.left ? 'ok' : 'danger'}" onclick="handleToggleLeave(${idx})">${leaveBtnText}</button>
-            </div>
+            <div class="roster-actions">${actionBtns}</div>
           </div>
         `;
       }).join('');
@@ -837,7 +902,6 @@
       const next = JSON.parse(JSON.stringify(currentState));
       next.players = JSON.parse(JSON.stringify(draftPlayers));
 
-      // 若場上有已標記離場的人且尚未替補，自動補進場下最少場次者
       for (let pos = 0; pos < draftCourtSlots.length; pos++) {
         const pIdx = draftCourtSlots[pos];
         if (!next.players[pIdx] || next.players[pIdx].left) {
@@ -868,7 +932,6 @@
       return uniqueNames.map(name => ({ name, gamesPlayed: 0, skipCount: 0, left: false }));
     }
 
-    // 挑選補位候選人：優先排除場上與已離場；若有人設定「跳過 1 次」，先略過並消耗跳過次數
     function pickRandomCandidate(players, excludeIndices, consumeSkip = true) {
       const eligible = players
         .map((p, idx) => ({ ...p, idx }))
@@ -878,7 +941,6 @@
 
       let pool = eligible.filter(p => (p.skipCount || 0) === 0);
       if (pool.length === 0) {
-        // 全員都被跳過時，解除跳過並讓大家公平抽籤
         if (consumeSkip) {
           eligible.forEach(p => { players[p.idx].skipCount = 0; });
         }
