@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>匹克球雲端記分板</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --team-a-color: #0284c7;
+      --team-b-color: #e11d48;
+      --accent-color: #facc15;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg-color); color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    
+    header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #1e293b; font-size: 14px; gap: 8px; flex-wrap: wrap; }
+    .mode-switch button { background: #334155; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; margin-left: 6px; cursor: pointer; font-weight: bold; }
+    .mode-switch button.active { background: var(--accent-color); color: #000; }
+    
+    .board { flex: 1; display: flex; width: 100%; }
+    .team { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; transition: 0.2s; padding: 20px; }
+    .team-a { background: linear-gradient(135deg, #0c4a6e, #0284c7); border-right: 2px solid #1e293b; }
+    .team-b { background: linear-gradient(135deg, #881337, #e11d48); }
+    
+    .team-name { font-size: 3vw; font-weight: bold; opacity: 0.9; margin-bottom: 10px; }
+    .score { font-size: 26vw; font-weight: 900; line-height: 1; text-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    
+    .serve-badge { margin-top: 20px; padding: 10px 28px; border-radius: 50px; font-size: 2.5vw; font-weight: bold; background: rgba(0,0,0,0.3); color: rgba(255,255,255,0.4); }
+    .serving .serve-badge { background: var(--accent-color); color: #000; box-shadow: 0 0 20px rgba(250, 204, 21, 0.6); }
+    
+    .remote-controls { display: none; padding: 15px; background: #1e293b; grid-template-columns: 1fr 1fr; gap: 12px; }
+    body.remote-mode .remote-controls { display: grid; }
+    body.remote-mode .score { font-size: 18vw; }
+    
+    .btn { border: none; border-radius: 12px; padding: 18px; font-size: 18px; font-weight: bold; color: #fff; cursor: pointer; }
+    .btn:active { transform: scale(0.97); }
+    .btn-a { background: var(--team-a-color); }
+    .btn-b { background: var(--team-b-color); }
+    .btn-sideout { background: #f59e0b; color: #000; grid-column: span 2; font-size: 20px; }
+    .btn-util { background: #475569; font-size: 15px; padding: 12px; }
+
+    @media (max-width: 768px) {
+      .team-name { font-size: 22px; }
+      .serve-badge { font-size: 16px; padding: 8px 18px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>場地代碼：<strong id="room-label">court1</strong></div>
+    <div class="mode-switch">
+      <button id="btn-display" class="active" onclick="setMode('display')">大螢幕看板</button>
+      <button id="btn-remote" onclick="setMode('remote')">裁判遙控器</button>
+      <button onclick="toggleVoice()">🔊 語音：<span id="voice-status">關</span></button>
+      <button onclick="requestWakeLock()">💡 防休眠：<span id="wakelock-status">關</span></button>
+    </div>
+  </header>
+
+  <div class="board">
+    <div id="panel-a" class="team team-a serving">
+      <div class="team-name">藍隊 (A)</div>
+      <div id="score-a" class="score">0</div>
+      <div id="serve-a" class="serve-badge">第 2 發 (發球權)</div>
+    </div>
+    <div id="panel-b" class="team team-b">
+      <div class="team-name">紅隊 (B)</div>
+      <div id="score-b" class="score">0</div>
+      <div id="serve-b" class="serve-badge">接發球</div>
+    </div>
+  </div>
+
+  <div class="remote-controls">
+    <button class="btn btn-a" onclick="dispatchAction('POINT_A')">＋ 藍隊得分</button>
+    <button class="btn btn-b" onclick="dispatchAction('POINT_B')">＋ 紅隊得分</button>
+    <button class="btn btn-sideout" onclick="dispatchAction('SIDE_OUT')">🔄 換發 / 失誤 (Side Out)</button>
+    <button class="btn btn-util" onclick="dispatchAction('UNDO')">↩️ 復原上一步</button>
+    <button class="btn btn-util" onclick="dispatchAction('RESET')">🗑️ 重新開局 (0-0-2)</button>
+  </div>
+
+  <script>
+    const FIREBASE_DB_URL = "https://pickleball-score-8ec8a-default-rtdb.asia-southeast1.firebasedatabase.app";
+    const urlParams = new URLSearchParams(window.location.search);
+    const ROOM_ID = urlParams.get('room') || 'court1';
+    document.getElementById('room-label').innerText = ROOM_ID;
+
+    let voiceEnabled = false;
+    let wakeLock = null;
+    let currentState = {
+      scoreA: 0,
+      scoreB: 0,
+      servingTeam: 'A',
+      serverNumber: 2,
+      history: []
+    };
+
+    function setMode(mode) {
+      document.body.classList.toggle('remote-mode', mode === 'remote');
+      document.getElementById('btn-display').classList.toggle('active', mode === 'display');
+      document.getElementById('btn-remote').classList.toggle('active', mode === 'remote');
+    }
+
+    function toggleVoice() {
+      voiceEnabled = !voiceEnabled;
+      document.getElementById('voice-status').innerText = voiceEnabled ? '開' : '關';
+    }
+
+    async function requestWakeLock() {
+      try {
+        if ('wakeLock' in navigator && !wakeLock) {
+          wakeLock = await navigator.wakeLock.request('screen');
+          document.getElementById('wakelock-status').innerText = '開';
+          wakeLock.addEventListener('release', () => {
+            wakeLock = null;
+            document.getElementById('wakelock-status').innerText = '關';
+          });
+        } else if (wakeLock) {
+          await wakeLock.release();
+          wakeLock = null;
+          document.getElementById('wakelock-status').innerText = '關';
+        }
+      } catch (e) {
+        console.error("防休眠設定失敗:", e);
+      }
+    }
+
+    function processLogic(state, action) {
+      let next = JSON.parse(JSON.stringify(state));
+      if (!next.history) next.history = [];
+
+      if (action === 'RESET') {
+        return { scoreA: 0, scoreB: 0, servingTeam: 'A', serverNumber: 2, history: [] };
+      }
+
+      if (action === 'UNDO') {
+        if (next.history.length > 0) {
+          const prev = next.history.pop();
+          prev.history = next.history;
+          return prev;
+        }
+        return next;
+      }
+
+      const snapshot = { scoreA: next.scoreA, scoreB: next.scoreB, servingTeam: next.servingTeam, serverNumber: next.serverNumber };
+      next.history.push(snapshot);
+      if (next.history.length > 20) next.history.shift();
+
+      if (action === 'POINT_A') {
+        if (next.servingTeam === 'A') next.scoreA += 1;
+        else { next.servingTeam = 'A'; next.serverNumber = 1; }
+      } else if (action === 'POINT_B') {
+        if (next.servingTeam === 'B') next.scoreB += 1;
+        else { next.servingTeam = 'B'; next.serverNumber = 1; }
+      } else if (action === 'SIDE_OUT') {
+        if (next.serverNumber === 1) {
+          next.serverNumber = 2;
+        } else {
+          next.servingTeam = next.servingTeam === 'A' ? 'B' : 'A';
+          next.serverNumber = 1;
+        }
+      }
+      return next;
+    }
+
+    function render(state, speak = false) {
+      document.getElementById('score-a').innerText = state.scoreA;
+      document.getElementById('score-b').innerText = state.scoreB;
+
+      const panelA = document.getElementById('panel-a');
+      const panelB = document.getElementById('panel-b');
+      const serveA = document.getElementById('serve-a');
+      const serveB = document.getElementById('serve-b');
+
+      if (state.servingTeam === 'A') {
+        panelA.classList.add('serving');
+        panelB.classList.remove('serving');
+        serveA.innerText = `第 ${state.serverNumber} 發 (發球權)`;
+        serveB.innerText = `接發球`;
+      } else {
+        panelB.classList.add('serving');
+        panelA.classList.remove('serving');
+        serveB.innerText = `第 ${state.serverNumber} 發 (發球權)`;
+        serveA.innerText = `接發球`;
+      }
+
+      if (speak && voiceEnabled && 'speechSynthesis' in window) {
+        const s1 = state.servingTeam === 'A' ? state.scoreA : state.scoreB;
+        const s2 = state.servingTeam === 'A' ? state.scoreB : state.scoreA;
+        const msg = new SpeechSynthesisUtterance(`${s1} 比 ${s2}，第 ${state.serverNumber} 發`);
+        msg.lang = 'zh-TW';
+        window.speechSynthesis.speak(msg);
+      }
+    }
+
+    async function dispatchAction(action) {
+      const nextState = processLogic(currentState, action);
+      currentState = nextState;
+      render(currentState, true);
+      await fetch(`${FIREBASE_DB_URL}/rooms/${ROOM_ID}/state.json`, {
+        method: 'PUT',
+        body: JSON.stringify(nextState)
+      });
+    }
+
+    async function syncLoop() {
+      try {
+        const cmdRes = await fetch(`${FIREBASE_DB_URL}/rooms/${ROOM_ID}/command.json`);
+        const cmd = await cmdRes.json();
+        if (cmd && cmd.action) {
+          await fetch(`${FIREBASE_DB_URL}/rooms/${ROOM_ID}/command.json`, { method: 'DELETE' });
+          await dispatchAction(cmd.action);
+          return;
+        }
+
+        const stateRes = await fetch(`${FIREBASE_DB_URL}/rooms/${ROOM_ID}/state.json`);
+        const remoteState = await stateRes.json();
+        if (remoteState && JSON.stringify(remoteState) !== JSON.stringify(currentState)) {
+          const scoreChanged = remoteState.scoreA !== currentState.scoreA || remoteState.scoreB !== currentState.scoreB || remoteState.serverNumber !== currentState.serverNumber;
+          currentState = remoteState;
+          render(currentState, scoreChanged);
+        }
+      } catch (e) {
+        console.error("同步異常:", e);
+      }
+    }
+
+    setInterval(syncLoop, 800);
+  </script>
+</body>
+</html>
