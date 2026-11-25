@@ -5,103 +5,340 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>匹克球雲端記分板 Pro</title>
+  <title>匹克球雲端記分板 Pro — Courtside LED</title>
   <style>
     :root {
-      --bg-color: #0f172a;
-      --panel-bg: #1e293b;
-      --team-a: #0284c7;
-      --team-a-dark: #0c4a6e;
-      --team-b: #e11d48;
-      --team-b-dark: #881337;
+      --bg-color: #05070a;
+      --led-surface: #0b0f17;
+      --panel-bg: #111827;
+      --team-a: #0ea5e9;
+      --team-a-glow: rgba(14, 165, 233, 0.45);
+      --team-b: #f43f5e;
+      --team-b-glow: rgba(244, 63, 94, 0.45);
+      --ball-neon: #ccff00;
+      --ball-glow: rgba(204, 255, 0, 0.75);
       --accent: #facc15;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
     body { background-color: var(--bg-color); color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; user-select: none; }
 
     /* 頂部功能列 */
-    header { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; background: var(--panel-bg); font-size: 13px; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid #334155; z-index: 10; }
-    .room-badge { display: flex; align-items: center; gap: 6px; background: #0f172a; padding: 4px 10px; border-radius: 6px; border: 1px solid #334155; }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; }
-    .status-dot.offline { background: #ef4444; }
+    header { display: flex; justify-content: space-between; align-items: center; padding: 7px 14px; background: var(--panel-bg); font-size: 13px; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid #1f2937; z-index: 10; }
+    .room-badge { display: flex; align-items: center; gap: 6px; background: #030712; padding: 4px 10px; border-radius: 6px; border: 1px solid #374151; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; box-shadow: 0 0 8px #22c55e; }
+    .status-dot.offline { background: #ef4444; box-shadow: none; }
     .btn-share-mini { background: #0284c7; color: #fff; border: none; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; margin-left: 2px; }
     .btn-share-mini:active { transform: scale(0.95); }
 
     .header-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-    .header-actions button { background: #334155; color: #fff; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; transition: 0.15s; }
-    .header-actions button.active { background: var(--accent); color: #000; }
-    .header-actions button.btn-leave { background: #7f1d1d; color: #fecaca; }
-    .header-actions button.btn-leave:hover { background: #991b1b; }
+    .header-actions button { background: #1f2937; color: #e5e7eb; border: 1px solid #374151; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; transition: 0.15s; }
+    .header-actions button.active { background: var(--ball-neon); color: #000; border-color: var(--ball-neon); font-weight: 800; }
+    .header-actions button.btn-leave { background: #7f1d1d; border-color: #991b1b; color: #fecaca; }
 
     /* 休閒輪轉狀態橫幅 */
-    .rotation-bar { display: none; background: #0f172a; border-bottom: 1px solid #334155; padding: 6px 14px; font-size: 13px; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .rotation-bar { display: none; background: #090d16; border-bottom: 1px solid #1f2937; padding: 6px 14px; font-size: 13px; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
     .rotation-bar.visible { display: flex; }
     .next-match { color: #38bdf8; font-weight: bold; }
     .player-pills { display: flex; gap: 5px; flex-wrap: wrap; }
-    .pill { background: #1e293b; border: 1px solid #475569; padding: 2px 8px; border-radius: 12px; font-size: 11px; color: #cbd5e1; }
-    .pill.playing { background: #064e3b; border-color: #10b981; color: #6ee7b7; font-weight: bold; }
+    .pill { background: #111827; border: 1px solid #374151; padding: 2px 8px; border-radius: 12px; font-size: 11px; color: #9ca3af; }
+    .pill.playing { background: #052e16; border-color: #10b981; color: #6ee7b7; font-weight: bold; }
     .pill.priority { background: #172554; border-color: #38bdf8; color: #7dd3fc; font-weight: bold; }
     .pill.skip { background: #451a03; border-color: #d97706; color: #fcd34d; }
     .pill.left { background: #3f1d2e; border-color: #9d174d; color: #fda4af; opacity: 0.7; }
 
     /* 換邊提示橫幅 */
-    .alert-banner { display: none; background: #f59e0b; color: #000; text-align: center; font-weight: 900; padding: 6px; font-size: 15px; letter-spacing: 1px; }
+    .alert-banner { display: none; background: var(--accent); color: #000; text-align: center; font-weight: 900; padding: 5px; font-size: 14px; letter-spacing: 1px; }
     .alert-banner.visible { display: block; }
 
-    /* 記分板主畫面 */
-    .board { flex: 1; display: flex; width: 100%; position: relative; }
-    .board.swapped { flex-direction: row-reverse; }
-    .team { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; transition: 0.25s; padding: 16px; }
-    .team-a { background: linear-gradient(135deg, var(--team-a-dark), var(--team-a)); border-right: 1px solid #1e293b; }
-    .team-b { background: linear-gradient(135deg, var(--team-b-dark), var(--team-b)); border-left: 1px solid #1e293b; }
+    /* =========================================================
+       PPA / MLP 中央主球場：場邊矮牆 LED 橫幅看板 (Courtside LED)
+       ========================================================= */
+    .led-stadium-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 12px 16px;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(30, 41, 59, 0.35), transparent 70%),
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 4px),
+        #040609;
+      position: relative;
+    }
 
-    .team-label { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; margin-bottom: 4px; }
-    .team-name { font-size: 3.2vw; font-weight: 800; text-align: center; margin-bottom: 8px; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
-    .score { font-size: 24vw; font-weight: 900; line-height: 0.95; text-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    /* 頂部賽事資訊與各局歷史比分條 */
+    .led-top-strip {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0b0f19;
+      border: 1px solid #1e293b;
+      border-bottom: none;
+      border-radius: 14px 14px 0 0;
+      padding: 8px 18px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .tour-tag {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      color: #94a3b8;
+      text-transform: uppercase;
+    }
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ef4444;
+      box-shadow: 0 0 10px #ef4444;
+      animation: pulseLive 1.5s infinite;
+    }
+    .set-history-list {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .set-chip {
+      background: #111827;
+      border: 1px solid #334155;
+      color: #e2e8f0;
+      font-variant-numeric: tabular-nums;
+      font-size: 13px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+    .set-chip span { color: #64748b; font-size: 11px; margin-right: 4px; }
+    .set-chip.current {
+      border-color: var(--ball-neon);
+      color: var(--ball-neon);
+      background: rgba(204, 255, 0, 0.08);
+    }
 
-    .serve-badge { margin-top: 16px; padding: 8px 24px; border-radius: 50px; font-size: 2.2vw; font-weight: 800; background: rgba(0,0,0,0.35); color: rgba(255,255,255,0.45); transition: 0.2s; }
-    .serving .serve-badge { background: var(--accent); color: #000; box-shadow: 0 0 24px rgba(250, 204, 21, 0.7); transform: scale(1.05); }
+    /* 主 LED 橫幅面板 */
+    .led-ribbon {
+      flex: 1;
+      max-height: 440px;
+      min-height: 210px;
+      display: flex;
+      width: 100%;
+      background: var(--led-surface);
+      border: 2px solid #1e293b;
+      border-radius: 0 0 16px 16px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), inset 0 0 40px rgba(0, 0, 0, 0.9);
+      overflow: hidden;
+      position: relative;
+    }
+    .led-ribbon.swapped { flex-direction: row-reverse; }
+
+    /* 單側隊伍 LED 區塊 */
+    .led-side {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      position: relative;
+      transition: background 0.25s, opacity 0.25s;
+    }
+    .led-side.side-a {
+      border-left: 8px solid var(--team-a);
+      background: linear-gradient(90deg, rgba(14, 165, 233, 0.14) 0%, rgba(11, 15, 23, 0.96) 55%);
+    }
+    .led-side.side-b {
+      flex-direction: row-reverse;
+      border-right: 8px solid var(--team-b);
+      background: linear-gradient(270deg, rgba(244, 63, 94, 0.14) 0%, rgba(11, 15, 23, 0.96) 55%);
+    }
+    .led-ribbon.swapped .led-side.side-a {
+      flex-direction: row-reverse;
+      border-left: none;
+      border-right: 8px solid var(--team-a);
+      background: linear-gradient(270deg, rgba(14, 165, 233, 0.14) 0%, rgba(11, 15, 23, 0.96) 55%);
+    }
+    .led-ribbon.swapped .led-side.side-b {
+      flex-direction: row;
+      border-right: none;
+      border-left: 8px solid var(--team-b);
+      background: linear-gradient(90deg, rgba(244, 63, 94, 0.14) 0%, rgba(11, 15, 23, 0.96) 55%);
+    }
+
+    /* 中央分隔網線 */
+    .led-center-divider {
+      width: 2px;
+      background: linear-gradient(180deg, transparent, #334155 20%, #475569 50%, #334155 80%, transparent);
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    /* 選手名稱與進攻發球區 */
+    .led-info {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 12px;
+      max-width: 62%;
+    }
+    .led-side.side-b .led-info { align-items: flex-end; text-align: right; }
+    .led-ribbon.swapped .led-side.side-a .led-info { align-items: flex-end; text-align: right; }
+    .led-ribbon.swapped .led-side.side-b .led-info { align-items: flex-start; text-align: left; }
+
+    .team-tag-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+    .tag-dot-a { width: 10px; height: 10px; border-radius: 2px; background: var(--team-a); box-shadow: 0 0 8px var(--team-a); }
+    .tag-dot-b { width: 10px; height: 10px; border-radius: 2px; background: var(--team-b); box-shadow: 0 0 8px var(--team-b); }
+
+    .led-players {
+      font-size: clamp(22px, 3.2vw, 44px);
+      font-weight: 900;
+      line-height: 1.15;
+      letter-spacing: 0.5px;
+      color: #f8fafc;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.8);
+      word-break: keep-all;
+    }
+    .led-players .slash {
+      color: #64748b;
+      margin: 0 6px;
+      font-weight: 600;
+    }
+
+    /* 發光匹克球圖示 + 發球順位 (1 或 2) */
+    .serve-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      opacity: 0.22;
+      transition: all 0.25s ease;
+    }
+    .led-side.serving .serve-indicator {
+      opacity: 1;
+      background: rgba(204, 255, 0, 0.14);
+      border-color: var(--ball-neon);
+      box-shadow: 0 0 20px rgba(204, 255, 0, 0.35);
+    }
+
+    /* SVG 匹克球發光圖示 */
+    .pickleball-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--ball-neon);
+      box-shadow: 0 0 14px var(--ball-glow);
+      position: relative;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .pickleball-icon::before,
+    .pickleball-icon::after {
+      content: "";
+      position: absolute;
+      background: #1a2e05;
+      border-radius: 50%;
+    }
+    .pickleball-icon::before {
+      width: 4px; height: 4px;
+      top: 5px; left: 6px;
+      box-shadow: 8px 0 0 #1a2e05, 4px 6px 0 #1a2e05, 0 10px 0 #1a2e05, 8px 10px 0 #1a2e05;
+    }
+
+    .serve-num {
+      font-size: clamp(18px, 2.1vw, 26px);
+      font-weight: 900;
+      color: var(--ball-neon);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.5px;
+    }
+    .serve-label-text {
+      font-size: 12px;
+      font-weight: 800;
+      color: #d9f99d;
+      letter-spacing: 1px;
+    }
+
+    /* LED 超大高對比數位比分 */
+    .led-score-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 34%;
+    }
+    .led-score {
+      font-size: clamp(88px, 19vw, 240px);
+      font-weight: 900;
+      line-height: 0.9;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -4px;
+      color: #ffffff;
+      transition: transform 0.15s ease, text-shadow 0.2s ease;
+    }
+    .led-side.side-a.serving .led-score {
+      color: #e0f2fe;
+      text-shadow: 0 0 32px var(--team-a-glow);
+    }
+    .led-side.side-b.serving .led-score {
+      color: #ffe4e6;
+      text-shadow: 0 0 32px var(--team-b-glow);
+    }
 
     /* 裁判遙控面板（進攻方防呆設計 + 防連點鎖定） */
-    .remote-controls { display: none; padding: 12px; background: var(--panel-bg); border-top: 1px solid #334155; flex-direction: column; gap: 10px; }
+    .remote-controls { display: none; padding: 10px 14px; background: var(--panel-bg); border-top: 1px solid #1f2937; flex-direction: column; gap: 8px; }
     body.remote-mode .remote-controls { display: flex; }
-    body.remote-mode .score { font-size: 15vw; }
+    body.remote-mode .led-score { font-size: clamp(64px, 13vw, 140px); }
+    body.remote-mode .led-stadium-wrap { padding: 8px 12px; }
     .remote-controls.busy { opacity: 0.7; pointer-events: none; }
 
-    .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .control-grid.swapped { direction: rtl; }
     .control-grid.swapped > * { direction: ltr; }
 
-    .team-ctrl-box { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 14px; background: rgba(15, 23, 42, 0.6); border: 2px solid transparent; transition: 0.2s; }
-    .team-ctrl-box.active-offense { border-color: var(--accent); background: rgba(15, 23, 42, 0.95); }
-    .team-ctrl-box.locked-defense { opacity: 0.35; pointer-events: none; filter: grayscale(70%); }
-    .ctrl-header { text-align: center; font-size: 13px; font-weight: bold; color: #cbd5e1; }
+    .team-ctrl-box { display: flex; flex-direction: column; gap: 7px; padding: 9px; border-radius: 12px; background: rgba(5, 7, 10, 0.75); border: 2px solid transparent; transition: 0.2s; }
+    .team-ctrl-box.active-offense { border-color: var(--ball-neon); background: #090d16; }
+    .team-ctrl-box.locked-defense { opacity: 0.3; pointer-events: none; filter: grayscale(80%); }
+    .ctrl-header { text-align: center; font-size: 12px; font-weight: bold; color: #cbd5e1; }
 
-    .btn { border: none; border-radius: 10px; padding: 14px 10px; font-size: 17px; font-weight: 800; color: #fff; cursor: pointer; transition: 0.1s; }
+    .btn { border: none; border-radius: 9px; padding: 12px 10px; font-size: 16px; font-weight: 800; color: #fff; cursor: pointer; transition: 0.1s; }
     .btn:active { transform: scale(0.96); }
     .btn-score-a { background: var(--team-a); }
     .btn-score-b { background: var(--team-b); }
     .btn-fault { background: #f59e0b; color: #000; }
 
     .util-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-    .btn-util { background: #334155; font-size: 13px; padding: 10px; color: #fff; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; }
+    .btn-util { background: #1f2937; border: 1px solid #374151; font-size: 12px; padding: 9px; color: #fff; border-radius: 9px; font-weight: 700; cursor: pointer; }
 
     /* 彈窗系統 */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(6px); display: flex; justify-content: center; align-items: center; z-index: 100; padding: 16px; }
-    .modal-card { background: #1e293b; border: 1px solid #475569; border-radius: 16px; max-width: 540px; width: 100%; padding: 22px; max-height: 92vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(3, 7, 18, 0.95); backdrop-filter: blur(6px); display: flex; justify-content: center; align-items: center; z-index: 100; padding: 16px; }
+    .modal-card { background: #111827; border: 1px solid #374151; border-radius: 16px; max-width: 540px; width: 100%; padding: 22px; max-height: 92vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
     .modal-title { font-size: 20px; font-weight: 900; margin-bottom: 14px; color: var(--accent); text-align: center; }
 
     /* 房號入口卡片 */
-    .lobby-section { background: #0f172a; border: 1px solid #334155; border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+    .lobby-section { background: #030712; border: 1px solid #1f2937; border-radius: 14px; padding: 16px; margin-bottom: 14px; }
     .lobby-section h3 { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 6px; }
-    .lobby-section p { font-size: 12px; color: #94a3b8; margin-bottom: 12px; line-height: 1.45; }
-    .new-room-preview { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #1e293b; border: 1px dashed #64748b; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
+    .lobby-section p { font-size: 12px; color: #9ca3af; margin-bottom: 12px; line-height: 1.45; }
+    .new-room-preview { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #111827; border: 1px dashed #4b5563; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
     .new-room-code { font-size: 18px; font-weight: 900; color: #38bdf8; letter-spacing: 1px; }
     .join-row { display: flex; gap: 8px; }
     .join-row input { flex: 1; font-size: 15px; font-weight: bold; color: #facc15; }
     .btn-join { background: #0284c7; color: #fff; border: none; padding: 10px 16px; border-radius: 8px; font-size: 14px; font-weight: 800; cursor: pointer; white-space: nowrap; }
     .btn-join:active { transform: scale(0.96); }
-    .btn-room-tool { background: #334155; color: #fff; border: none; padding: 8px 11px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+    .btn-room-tool { background: #1f2937; color: #fff; border: 1px solid #374151; padding: 8px 11px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; white-space: nowrap; }
 
     /* 選手名單管理專用樣式 */
     .add-player-bar { display: flex; gap: 8px; margin-bottom: 12px; }
@@ -109,18 +346,18 @@
     .btn-add-player { background: #10b981; color: #052e16; border: none; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 800; cursor: pointer; white-space: nowrap; }
 
     .roster-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; max-height: 52vh; overflow-y: auto; }
-    .roster-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 10px 12px; flex-wrap: wrap; }
+    .roster-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #030712; border: 1px solid #1f2937; border-radius: 10px; padding: 10px 12px; flex-wrap: wrap; }
     .roster-item.is-left { opacity: 0.6; border-style: dashed; }
     .roster-main { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 150px; }
-    .roster-name-input { background: #1e293b; border: 1px solid #475569; color: #fff; padding: 5px 8px; border-radius: 6px; font-size: 14px; font-weight: 700; width: 110px; }
-    .roster-meta { font-size: 11px; color: #94a3b8; }
-    .badge-on { background: #064e3b; color: #6ee7b7; padding: 2px 7px; border-radius: 999px; font-size: 11px; font-weight: bold; }
+    .roster-name-input { background: #111827; border: 1px solid #374151; color: #fff; padding: 5px 8px; border-radius: 6px; font-size: 14px; font-weight: 700; width: 110px; }
+    .roster-meta { font-size: 11px; color: #9ca3af; }
+    .badge-on { background: #052e16; color: #6ee7b7; padding: 2px 7px; border-radius: 999px; font-size: 11px; font-weight: bold; }
     .badge-priority { background: #172554; color: #7dd3fc; border: 1px solid #0284c7; padding: 2px 7px; border-radius: 999px; font-size: 11px; font-weight: bold; }
     .badge-skip { background: #451a03; color: #fcd34d; padding: 2px 7px; border-radius: 999px; font-size: 11px; font-weight: bold; }
     .badge-left { background: #4c0519; color: #fda4af; padding: 2px 7px; border-radius: 999px; font-size: 11px; font-weight: bold; }
 
     .roster-actions { display: flex; gap: 5px; flex-wrap: wrap; }
-    .btn-mini { border: none; padding: 5px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; background: #334155; color: #fff; }
+    .btn-mini { border: none; padding: 5px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; background: #1f2937; color: #fff; }
     .btn-mini.warn { background: #b45309; color: #fff; }
     .btn-mini.danger { background: #991b1b; color: #fecaca; }
     .btn-mini.ok { background: #0369a1; color: #fff; }
@@ -129,14 +366,14 @@
     .sub-picker-buttons { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 
     .mode-cards { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
-    .mode-option { background: #0f172a; border: 2px solid #334155; border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: 0.15s; }
+    .mode-option { background: #030712; border: 2px solid #1f2937; border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: 0.15s; }
     .mode-option.selected { border-color: var(--accent); background: #172554; }
     .mode-option h4 { font-size: 16px; margin-bottom: 4px; color: #fff; }
-    .mode-option p { font-size: 12px; color: #94a3b8; line-height: 1.4; }
+    .mode-option p { font-size: 12px; color: #9ca3af; line-height: 1.4; }
 
     .form-group { margin-bottom: 12px; }
     .form-group label { display: block; font-size: 13px; color: #cbd5e1; margin-bottom: 6px; font-weight: bold; }
-    input[type="number"], input[type="text"], textarea { width: 100%; background: #0f172a; border: 1px solid #475569; color: #fff; padding: 8px 12px; border-radius: 8px; font-size: 14px; }
+    input[type="number"], input[type="text"], textarea { width: 100%; background: #030712; border: 1px solid #374151; color: #fff; padding: 8px 12px; border-radius: 8px; font-size: 14px; }
     textarea { resize: vertical; min-height: 76px; }
     .checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; color: #e2e8f0; }
 
@@ -144,29 +381,50 @@
     .btn-primary:active { transform: scale(0.98); }
 
     /* 全螢幕勝利慶祝動畫 */
-    .victory-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.94); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 200; text-align: center; padding: 20px; animation: fadeIn 0.3s ease-out; }
+    .victory-overlay { position: fixed; inset: 0; background: rgba(3, 7, 18, 0.94); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 200; text-align: center; padding: 20px; animation: fadeIn 0.3s ease-out; }
     .trophy { font-size: 84px; animation: bounce 1s infinite alternate; margin-bottom: 10px; }
     .victory-title { font-size: 42px; font-weight: 900; color: var(--accent); text-shadow: 0 0 30px rgba(250, 204, 21, 0.8); margin-bottom: 8px; }
     .victory-sub { font-size: 20px; color: #e2e8f0; margin-bottom: 24px; }
     .victory-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
     .victory-actions button { padding: 14px 24px; border-radius: 12px; border: none; font-size: 16px; font-weight: 800; cursor: pointer; }
 
-    /* 通用隱藏類別（置於所有元件樣式之後確保最高覆蓋權重） */
+    /* 通用隱藏類別 */
     .hidden { display: none !important; }
 
     /* 輕量提示氣泡 (Toast) */
-    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.95); color: #facc15; border: 1px solid #facc15; padding: 10px 18px; border-radius: 50px; font-size: 13px; font-weight: bold; z-index: 300; box-shadow: 0 8px 20px rgba(0,0,0,0.5); opacity: 0; pointer-events: none; transition: 0.25s; }
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: rgba(17, 24, 39, 0.96); color: var(--ball-neon); border: 1px solid var(--ball-neon); padding: 10px 18px; border-radius: 50px; font-size: 13px; font-weight: bold; z-index: 300; box-shadow: 0 8px 20px rgba(0,0,0,0.7); opacity: 0; pointer-events: none; transition: 0.25s; }
     .toast.show { opacity: 1; bottom: 32px; }
 
     /* 角落低調製作者署名 */
-    .creator-tag { position: fixed; right: 12px; bottom: 8px; font-size: 11px; color: rgba(255, 255, 255, 0.25); pointer-events: none; z-index: 5; letter-spacing: 0.4px; }
+    .creator-tag { position: fixed; right: 12px; bottom: 6px; font-size: 11px; color: rgba(255, 255, 255, 0.25); pointer-events: none; z-index: 5; letter-spacing: 0.4px; }
 
     @keyframes bounce { from { transform: translateY(0) scale(1); } to { transform: translateY(-14px) scale(1.08); } }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes pulseLive { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
     @media (max-width: 768px) {
-      .team-name { font-size: 20px; }
-      .serve-badge { font-size: 14px; padding: 6px 14px; }
+      .led-stadium-wrap { padding: 8px; }
+      .led-ribbon { flex-direction: column; max-height: none; }
+      .led-ribbon.swapped { flex-direction: column-reverse; }
+      .led-side, .led-side.side-b, .led-ribbon.swapped .led-side.side-a, .led-ribbon.swapped .led-side.side-b {
+        flex-direction: row;
+        padding: 14px 16px;
+        border-right: none;
+      }
+      .led-side.side-a, .led-ribbon.swapped .led-side.side-a {
+        border-left: 6px solid var(--team-a);
+        background: linear-gradient(90deg, rgba(14, 165, 233, 0.16) 0%, rgba(11, 15, 23, 0.96) 65%);
+      }
+      .led-side.side-b, .led-ribbon.swapped .led-side.side-b {
+        border-left: 6px solid var(--team-b);
+        background: linear-gradient(90deg, rgba(244, 63, 94, 0.16) 0%, rgba(11, 15, 23, 0.96) 65%);
+      }
+      .led-side.side-b .led-info, .led-ribbon.swapped .led-side.side-a .led-info {
+        align-items: flex-start;
+        text-align: left;
+      }
+      .led-center-divider { width: 100%; height: 2px; }
+      .led-score { font-size: 76px; }
       .victory-title { font-size: 32px; }
     }
   </style>
@@ -182,12 +440,12 @@
       <span id="mode-badge" style="color:#facc15; font-weight:bold; margin-left:4px;"></span>
     </div>
     <div class="header-actions">
-      <button id="btn-display" class="active" onclick="setViewMode('display')">大螢幕看板</button>
+      <button id="btn-display" class="active" onclick="setViewMode('display')">LED 看板</button>
       <button id="btn-remote" onclick="setViewMode('remote')">裁判遙控器</button>
       <button onclick="toggleSwap()">⇄ 左右換邊</button>
       <button onclick="toggleVoice()">🔊 語音:<span id="voice-status">關</span></button>
       <button onclick="requestWakeLock()">💡 防休眠:<span id="wakelock-status">關</span></button>
-      <button onclick="openSetupModal()" style="background:#0284c7;">⚙️ 開局設定</button>
+      <button onclick="openSetupModal()" style="background:#0284c7; border-color:#0284c7;">⚙️ 開局設定</button>
       <button id="btn-leave-room" class="btn-leave" onclick="leaveCurrentRoom()">🚪 離開房間</button>
     </div>
   </header>
@@ -201,19 +459,58 @@
   <!-- 決勝局換邊或 Deuce 提示條 -->
   <div id="alert-banner" class="alert-banner"></div>
 
-  <!-- 記分板主體 -->
-  <div id="board" class="board">
-    <div id="panel-a" class="team team-a serving">
-      <div class="team-label">藍隊 (A)</div>
-      <div id="name-a" class="team-name">藍隊</div>
-      <div id="score-a" class="score">0</div>
-      <div id="serve-a" class="serve-badge">第 2 發 (進攻方)</div>
+  <!-- PPA / MLP 中央主球場：場邊矮牆 LED 橫幅看板 -->
+  <div class="led-stadium-wrap">
+    <div class="led-top-strip">
+      <div class="tour-tag">
+        <span class="live-dot"></span>
+        <span>CHAMPIONSHIP COURT • LIVE LED</span>
+      </div>
+      <div class="set-history-list" id="set-history-list">
+        <div class="set-chip current"><span>NOW</span>GAME 1</div>
+      </div>
     </div>
-    <div id="panel-b" class="team team-b">
-      <div class="team-label">紅隊 (B)</div>
-      <div id="name-b" class="team-name">紅隊</div>
-      <div id="score-b" class="score">0</div>
-      <div id="serve-b" class="serve-badge">防守方</div>
+
+    <div id="board" class="led-ribbon">
+      <!-- 藍隊 LED 區塊 -->
+      <div id="panel-a" class="led-side side-a serving">
+        <div class="led-info">
+          <div class="team-tag-row">
+            <span class="tag-dot-a"></span>
+            <span style="color:#7dd3fc;">TEAM A</span>
+          </div>
+          <div id="name-a" class="led-players">藍隊</div>
+          <div class="serve-indicator">
+            <span class="pickleball-icon"></span>
+            <span class="serve-num" id="serve-num-a">2</span>
+            <span class="serve-label-text" id="serve-text-a">SERVE</span>
+          </div>
+        </div>
+        <div class="led-score-box">
+          <div id="score-a" class="led-score">0</div>
+        </div>
+      </div>
+
+      <div class="led-center-divider"></div>
+
+      <!-- 紅隊 LED 區塊 -->
+      <div id="panel-b" class="led-side side-b">
+        <div class="led-info">
+          <div class="team-tag-row">
+            <span class="tag-dot-b"></span>
+            <span style="color:#fda4af;">TEAM B</span>
+          </div>
+          <div id="name-b" class="led-players">紅隊</div>
+          <div class="serve-indicator">
+            <span class="pickleball-icon"></span>
+            <span class="serve-num" id="serve-num-b">-</span>
+            <span class="serve-label-text" id="serve-text-b">RECEIVE</span>
+          </div>
+        </div>
+        <div class="led-score-box">
+          <div id="score-b" class="led-score">0</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -272,7 +569,7 @@
       <div class="mode-cards">
         <div class="mode-option selected" data-mode="standard" onclick="selectModeCard('standard')">
           <h4>🏆 正規賽模式（11 分制）</h4>
-          <p>先得 11 分且領先至少 2 分（Deuce）勝出，支援決勝局 6 分換邊提醒。</p>
+          <p>先得 11 分且領先至少 2 分（Deuce）勝出，支援決勝局 6 分換邊提醒與各局歷史比分紀錄。</p>
         </div>
         <div class="mode-option" data-mode="casual_seq" onclick="selectModeCard('casual_seq')">
           <h4>🔄 休閒模式 — 依序輪轉版</h4>
@@ -320,7 +617,7 @@
     <div class="modal-card">
       <div class="modal-title">👥 選手名單管理</div>
 
-      <div id="roster-not-casual-hint" style="display:none; background:#0f172a; padding:12px; border-radius:10px; font-size:13px; color:#cbd5e1; margin-bottom:12px;">
+      <div id="roster-not-casual-hint" style="display:none; background:#030712; padding:12px; border-radius:10px; font-size:13px; color:#cbd5e1; margin-bottom:12px;">
         目前為正規賽模式，輪替名單功能適用於「休閒模式」。如需切換模式請點「⚙️ 開局設定」。
       </div>
 
@@ -342,7 +639,7 @@
           </div>
         </div>
 
-        <!-- 名單列表（改暱稱、臨時換下/跳過 1 次、離場/歸隊） -->
+        <!-- 名單列表 -->
         <div id="roster-list" class="roster-list"></div>
 
         <button type="button" class="btn-primary" onclick="saveRosterChanges()">💾 儲存名單變更並同步</button>
@@ -358,8 +655,8 @@
     <div id="victory-title" class="victory-title">藍隊獲勝！</div>
     <div id="victory-sub" class="victory-sub">最終比數 11 : 8</div>
     <div class="victory-actions">
-      <button id="btn-next-match" style="background:#facc15; color:#000;" onclick="handleNextMatch()">▶️ 進入下一場（自動輪替陣容）</button>
-      <button style="background:#334155; color:#fff;" onclick="openSetupModal()">⚙️ 切換模式 / 開局設定</button>
+      <button id="btn-next-match" style="background:#facc15; color:#000;" onclick="handleNextMatch()">▶️ 進入下一場（記錄本局並輪替）</button>
+      <button style="background:#1f2937; color:#fff; border:1px solid #374151;" onclick="openSetupModal()">⚙️ 切換模式 / 開局設定</button>
     </div>
   </div>
 
@@ -398,6 +695,7 @@
         serverNumber: 2,
         teamAName: '藍隊',
         teamBName: '紅隊',
+        setHistory: [],     // [{ scoreA, scoreB }] 各局歷史比分紀錄
         players: [],        // { name, gamesPlayed, skipCount, left }
         courtSlots: [],     // [idx0, idx1, idx2, idx3]
         priorityQueue: [],  // 臨時換下後下一場優先接續上場的球員索引佇列
@@ -448,7 +746,7 @@
     let draftCourtSlots = [];
     let draftPriorityQueue = [];
     let pendingSubSlotPos = null;
-    let pendingSubMode = null; // 'skip_once' | 'leave'
+    let pendingSubMode = null;
 
     function showToast(msg) {
       const el = document.getElementById('toast');
@@ -722,7 +1020,6 @@
       renderRosterList();
     }
 
-    // 已經排上場的球員臨時要跳過本場（對換場下替補，並排入下一場優先候補）
     function handleSkipOnCourt(idx) {
       syncDraftInputsToNames();
       const target = draftPlayers[idx];
@@ -772,7 +1069,6 @@
         return;
       }
 
-      // 若在優先候補佇列中設為離場，順便移出佇列
       draftPriorityQueue = draftPriorityQueue.filter(i => i !== idx);
 
       const slotPos = draftCourtSlots.indexOf(idx);
@@ -813,14 +1109,12 @@
           draftPlayers[outIdx].left = true;
           draftPriorityQueue = draftPriorityQueue.filter(i => i !== outIdx);
         } else if (pendingSubMode === 'skip_once') {
-          // 臨時換下者放入優先候補佇列最前面，下一場優先接續上場
           draftPriorityQueue = draftPriorityQueue.filter(i => i !== outIdx);
           draftPriorityQueue.unshift(outIdx);
         }
         draftPlayers[outIdx].skipCount = 0;
       }
 
-      // 替補上場者若原本在優先佇列中則移除
       draftPriorityQueue = draftPriorityQueue.filter(i => i !== subIdx);
       if (draftPlayers[subIdx]) {
         draftPlayers[subIdx].skipCount = 0;
@@ -1004,7 +1298,6 @@
       const leavingName = p[s[3]] ? p[s[3]].name : '';
       const stayIndices = [s[0], s[1], s[2]];
 
-      // 若有人被臨時換下，下一場優先接續補位
       const priorityIdx = getNextPriorityCandidate(state, stayIndices);
       if (priorityIdx !== null && p[priorityIdx]) {
         return `下一場預告：${p[priorityIdx].name} & ${p[s[0]].name} vs ${p[s[1]].name} & ${p[s[2]].name}（${leavingName} 下場）`;
@@ -1038,6 +1331,7 @@
         scoreB: 0,
         servingTeam: 'A',
         serverNumber: 2,
+        setHistory: [],
         winner: null,
         history: [],
         updatedAt: Date.now()
@@ -1075,7 +1369,7 @@
       showToast(`🚀 已在房號 [${ROOM_ID}] 開啟新賽局`);
     }
 
-    // 勝利後進入下一場
+    // 勝利後進入下一場（將本局比數寫入 setHistory）
     async function handleNextMatch() {
       if (isActionBusy || !ROOM_ID) return;
       setBusyLock(true);
@@ -1083,6 +1377,14 @@
         const latest = await fetchLatestStateFromFirebase() || currentState;
         let next = JSON.parse(JSON.stringify(latest));
         if (!next.priorityQueue) next.priorityQueue = [];
+        if (!Array.isArray(next.setHistory)) next.setHistory = [];
+
+        // 記錄剛結束這一局的比分至歷史列（保留最近 6 局）
+        if (next.winner || next.scoreA > 0 || next.scoreB > 0) {
+          next.setHistory.push({ scoreA: next.scoreA, scoreB: next.scoreB });
+          if (next.setHistory.length > 6) next.setHistory.shift();
+        }
+
         next.scoreA = 0;
         next.scoreB = 0;
         next.servingTeam = 'A';
@@ -1104,7 +1406,6 @@
           const stayIndices = [s0, s1, s2];
 
           let incomingIdx = null;
-          // 優先檢查是否有「被臨時換下」的球員等待接續上場
           const priorityIdx = getNextPriorityCandidate(next, stayIndices);
           if (priorityIdx !== null) {
             incomingIdx = priorityIdx;
@@ -1214,28 +1515,51 @@
       return next;
     }
 
+    // --- 格式化選手名稱為職業賽事斜線風格 (A / B) ---
+    function formatLedTeamHtml(rawName, fallback) {
+      const name = rawName || fallback;
+      if (name.includes('&')) {
+        const parts = name.split('&').map(s => escapeHtml(s.trim()));
+        return `${parts[0]}<span class="slash">/</span>${parts[1]}`;
+      }
+      return escapeHtml(name);
+    }
+
     // --- 畫面渲染與語音播報 ---
     function render(state, speak = false) {
       const modeMap = { standard: '正規賽 (11分)', casual_seq: `休閒依序 (${state.targetScore}分)`, casual_rand: `休閒亂數 (${state.targetScore}分)` };
       document.getElementById('mode-badge').innerText = state.initialized ? (modeMap[state.mode] || '') : '';
 
-      document.getElementById('name-a').innerText = state.teamAName || '藍隊';
-      document.getElementById('name-b').innerText = state.teamBName || '紅隊';
+      document.getElementById('name-a').innerHTML = formatLedTeamHtml(state.teamAName, '藍隊');
+      document.getElementById('name-b').innerHTML = formatLedTeamHtml(state.teamBName, '紅隊');
       document.getElementById('score-a').innerText = state.scoreA;
       document.getElementById('score-b').innerText = state.scoreB;
 
+      // 渲染各局歷史比分條
+      const setListEl = document.getElementById('set-history-list');
+      const sets = Array.isArray(state.setHistory) ? state.setHistory : [];
+      const historyChips = sets.map((g, idx) =>
+        `<div class="set-chip"><span>G${idx + 1}</span>${g.scoreA}-${g.scoreB}</div>`
+      ).join('');
+      const currentGameNum = sets.length + 1;
+      setListEl.innerHTML = `${historyChips}<div class="set-chip current"><span>NOW</span>GAME ${currentGameNum}</div>`;
+
       const panelA = document.getElementById('panel-a');
       const panelB = document.getElementById('panel-b');
-      const serveA = document.getElementById('serve-a');
-      const serveB = document.getElementById('serve-b');
+      const serveNumA = document.getElementById('serve-num-a');
+      const serveNumB = document.getElementById('serve-num-b');
+      const serveTextA = document.getElementById('serve-text-a');
+      const serveTextB = document.getElementById('serve-text-b');
       const ctrlA = document.getElementById('ctrl-a');
       const ctrlB = document.getElementById('ctrl-b');
 
       if (state.servingTeam === 'A') {
         panelA.classList.add('serving');
         panelB.classList.remove('serving');
-        serveA.innerText = `第 ${state.serverNumber} 發 (進攻方)`;
-        serveB.innerText = `防守方`;
+        serveNumA.innerText = state.serverNumber;
+        serveTextA.innerText = 'SERVE';
+        serveNumB.innerText = '-';
+        serveTextB.innerText = 'RECEIVE';
 
         ctrlA.classList.add('active-offense');
         ctrlA.classList.remove('locked-defense');
@@ -1246,8 +1570,10 @@
       } else {
         panelB.classList.add('serving');
         panelA.classList.remove('serving');
-        serveB.innerText = `第 ${state.serverNumber} 發 (進攻方)`;
-        serveA.innerText = `防守方`;
+        serveNumB.innerText = state.serverNumber;
+        serveTextB.innerText = 'SERVE';
+        serveNumA.innerText = '-';
+        serveTextA.innerText = 'RECEIVE';
 
         ctrlB.classList.add('active-offense');
         ctrlB.classList.remove('locked-defense');
@@ -1301,7 +1627,7 @@
         const winTeamName = state.winner === 'A' ? state.teamAName : state.teamBName;
         document.getElementById('victory-title').innerText = `🎉 ${winTeamName} 獲勝！`;
         document.getElementById('victory-sub').innerText = `最終比數 ${state.scoreA} : ${state.scoreB}`;
-        document.getElementById('btn-next-match').innerText = state.mode === 'standard' ? '▶️ 再來一局 (0-0-2)' : '▶️ 進入下一場（自動輪替陣容）';
+        document.getElementById('btn-next-match').innerText = state.mode === 'standard' ? '▶️ 進入下一局 (記錄本局並歸零)' : '▶️ 進入下一場（記錄本局並輪替）';
         victoryOverlay.classList.remove('hidden');
       } else {
         victoryOverlay.classList.add('hidden');
