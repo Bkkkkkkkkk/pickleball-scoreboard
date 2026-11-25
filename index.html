@@ -194,11 +194,11 @@
         </div>
         <div class="mode-option" data-mode="casual_seq" onclick="selectModeCard('casual_seq')">
           <h4>🔄 休閒模式 — 依序輪轉版</h4>
-          <p>單場地多人輸送帶輪替，嚴格依名單順序推進（1、2 vs 3、4 → 8、1 vs 2、3...），每人上陣連打 4 場退場。</p>
+          <p>單場地多人輪替，每次換 1 人上場、固定照名單順序往後推（例如 1、2 vs 3、4 → 8、1 vs 2、3），補進來的人連打 4 場後下場。</p>
         </div>
         <div class="mode-option" data-mode="casual_rand" onclick="selectModeCard('casual_rand')">
-          <h4>🎲 休閒模式 — 亂數補位版（輸送帶）</h4>
-          <p>嚴格輸送帶隊形（每場退最右 1 人、左邊補 1 人，一上連打滿 4 場），補位人選從場外累積場次最少者隨機抽出。</p>
+          <h4>🎲 休閒模式 — 亂數補位版</h4>
+          <p>單場地多人輪替，每次換 1 人上場，補進來的人會從「目前沒上場且打最少場」的球友中隨機抽籤，一上場也是連打 4 場後下場。</p>
         </div>
       </div>
 
@@ -271,7 +271,7 @@
       serverNumber: 2,
       teamAName: '藍隊',
       teamBName: '紅隊',
-      // 休閒模式輸送帶輪轉狀態
+      // 休閒模式輪替狀態
       players: [],        // [{ name: '阿凱', gamesPlayed: 0 }]
       courtSlots: [],     // [idx0, idx1, idx2, idx3] -> [0,1]為藍隊, [2,3]為紅隊，每次退 [3] 補 [0]
       seqPointer: 0,      // 依序模式指標
@@ -348,7 +348,7 @@
       return uniqueNames.map(name => ({ name, gamesPlayed: 0 }));
     }
 
-    // 嚴格輸送帶：從不在場上的球員中，挑「累積場次最少」的候選群組並隨機抽 1 位
+    // 從不在場上的球員中，挑「累積場次最少」的候選群組並隨機抽 1 位
     function pickRandomCandidate(players, excludeIndices) {
       const candidates = players
         .map((p, idx) => ({ ...p, idx }))
@@ -361,7 +361,7 @@
       return chosen.idx;
     }
 
-    // 計算下一場預告文字（嚴格輸送帶：[0,1] vs [2,3] -> [X,0] vs [1,2]，最右邊 [3] 退場）
+    // 計算下一場預告文字（[0,1] vs [2,3] -> [X,0] vs [1,2]，最右邊 [3] 下場）
     function computeNextPreview(state) {
       if (state.mode === 'standard' || !state.players || state.players.length < 4) return '';
       const p = state.players;
@@ -370,9 +370,9 @@
 
       if (state.mode === 'casual_seq') {
         const nextIdx = (state.seqPointer - 1 + p.length) % p.length;
-        return `下一場預告：${p[nextIdx].name} & ${p[s[0]].name} vs ${p[s[1]].name} & ${p[s[2]].name}（${leavingName} 退場）`;
+        return `下一場預告：${p[nextIdx].name} & ${p[s[0]].name} vs ${p[s[1]].name} & ${p[s[2]].name}（${leavingName} 下場）`;
       } else {
-        return `下一場預告：[隨機補位] & ${p[s[0]].name} vs ${p[s[1]].name} & ${p[s[2]].name}（${leavingName} 退場）`;
+        return `下一場預告：[隨機補位] & ${p[s[0]].name} vs ${p[s[1]].name} & ${p[s[2]].name}（${leavingName} 下場）`;
       }
     }
 
@@ -418,7 +418,7 @@
       await saveStateToFirebase(currentState);
     }
 
-    // 勝利後進入下一場（嚴格輸送帶輪轉：永遠退最右邊 [3]，留任 [0,1,2] 往右推一格，最左邊 [0] 補進新人）
+    // 勝利後進入下一場（每次退最右邊 [3]，留任 [0,1,2] 往右推一格，最左邊 [0] 補進 1 人）
     async function handleNextMatch() {
       let next = JSON.parse(JSON.stringify(currentState));
       next.scoreA = 0;
@@ -430,14 +430,12 @@
       sideChangeNotified = false;
 
       if (next.mode !== 'standard' && next.players.length >= 4) {
-        // 結算剛剛打完這場的 4 位球員場次（各自 +1 場）
         next.courtSlots.forEach(idx => {
           if (next.players[idx]) {
             next.players[idx].gamesPlayed += 1;
           }
         });
 
-        // 留任前三位 [0, 1, 2]，最右邊 [3] 退場
         const s0 = next.courtSlots[0];
         const s1 = next.courtSlots[1];
         const s2 = next.courtSlots[2];
@@ -445,15 +443,12 @@
 
         let incomingIdx = 0;
         if (next.mode === 'casual_seq') {
-          // 依序補位（例如 8 人時：0 -> 7 -> 6 -> 5...）
           next.seqPointer = (next.seqPointer - 1 + next.players.length) % next.players.length;
           incomingIdx = next.seqPointer;
         } else if (next.mode === 'casual_rand') {
-          // 亂數補位：從不在場上（排除 stayIndices）的人中，挑累積場次最少者隨機抽 1 位
           incomingIdx = pickRandomCandidate(next.players, stayIndices);
         }
 
-        // 嚴格輸送帶推進：[incomingIdx, s0] vs [s1, s2]
         next.courtSlots = [incomingIdx, s0, s1, s2];
 
         const s = next.courtSlots;
@@ -619,7 +614,7 @@
         const winTeamName = state.winner === 'A' ? state.teamAName : state.teamBName;
         document.getElementById('victory-title').innerText = `🎉 ${winTeamName} 獲勝！`;
         document.getElementById('victory-sub').innerText = `最終比數 ${state.scoreA} : ${state.scoreB}`;
-        document.getElementById('btn-next-match').innerText = state.mode === 'standard' ? '▶️ 再來一局 (0-0-2)' : '▶️ 進入下一場（輸送帶自動輪替）';
+        document.getElementById('btn-next-match').innerText = state.mode === 'standard' ? '▶️ 再來一局 (0-0-2)' : '▶️ 進入下一場（自動輪替陣容）';
         victoryOverlay.classList.remove('hidden');
       } else {
         victoryOverlay.classList.add('hidden');
