@@ -34,9 +34,6 @@
       overflow-x: hidden;
       overflow-y: auto;
     }
-    @media (min-width: 769px) {
-      body { height: 100vh; height: 100dvh; overflow: hidden; }
-    }
 
     /* 頂部功能列 */
     header { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: var(--panel-bg); font-size: 13px; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid #1f2937; z-index: 10; transition: all 0.2s ease; flex-shrink: 0; }
@@ -76,30 +73,29 @@
     .header-actions button.active { background: var(--ball-neon); color: #000; border-color: var(--ball-neon); font-weight: 800; }
     .header-actions button.btn-leave { background: #7f1d1d; border-color: #991b1b; color: #fecaca; }
 
-    /* 下一場預告單段跑馬燈橫幅 */
+    /* 下一場預告單段跑馬燈橫幅（從最右進、左邊完全消失後再從最右出現） */
     .next-marquee-bar {
       display: none;
       align-items: center;
       background: #070b14;
       border-bottom: 1px solid #1e293b;
-      padding: 6px 14px;
+      padding: 4px 12px;
       overflow: hidden;
       position: relative;
-      height: 36px;
+      min-height: 34px;
       flex-shrink: 0;
     }
     .next-marquee-bar.visible { display: flex; }
     .marquee-item {
-      position: absolute;
-      left: 0;
+      display: inline-block;
       white-space: nowrap;
-      font-size: clamp(15px, 2vw, 21px);
+      font-size: clamp(14px, 2vw, 20px);
       font-weight: 900;
       color: #38bdf8;
-      letter-spacing: 0.8px;
+      letter-spacing: 0.6px;
       text-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
       will-change: transform;
-      animation: singleMarquee 14s linear infinite;
+      animation: singleMarquee 15s linear infinite;
     }
     .next-marquee-bar:hover .marquee-item { animation-play-state: paused; }
     @keyframes singleMarquee {
@@ -118,15 +114,15 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      padding: 10px 14px 12px;
+      padding: 8px 12px 14px;
       background:
         radial-gradient(circle at 50% 0%, rgba(30, 41, 59, 0.35), transparent 70%),
         repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 4px),
         #040609;
       position: relative;
-      min-height: 0;
+      min-height: 260px;
     }
-    body.header-hidden .led-stadium-wrap { padding-top: 14px; }
+    body.header-hidden .led-stadium-wrap { padding-top: 12px; }
 
     /* 頂部賽事資訊、各局歷史比分與「選手場數」按鈕 */
     .led-top-strip {
@@ -137,7 +133,7 @@
       border: 1px solid #1e293b;
       border-bottom: none;
       border-radius: 14px 14px 0 0;
-      padding: 7px 14px;
+      padding: 6px 14px;
       gap: 8px;
       flex-wrap: wrap;
       flex-shrink: 0;
@@ -213,7 +209,7 @@
     /* 主 LED 橫幅面板 */
     .led-ribbon {
       flex: 1;
-      min-height: 0;
+      min-height: 190px;
       display: flex;
       width: 100%;
       background: var(--led-surface);
@@ -231,7 +227,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 26px;
+      padding: 12px 22px;
       position: relative;
       transition: background 0.25s, opacity 0.25s;
       min-width: 0;
@@ -271,7 +267,7 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      gap: 12px;
+      gap: 10px;
       max-width: 58%;
     }
     .led-side.side-b .led-info { align-items: flex-end; text-align: right; }
@@ -282,7 +278,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 800;
       letter-spacing: 1.5px;
       text-transform: uppercase;
@@ -291,7 +287,7 @@
     .tag-dot-b { width: 10px; height: 10px; border-radius: 2px; background: var(--team-b); box-shadow: 0 0 8px var(--team-b); }
 
     .led-players {
-      font-size: clamp(22px, 3.6vw, 48px);
+      font-size: clamp(20px, 3.4vw, 46px);
       font-weight: 900;
       line-height: 1.15;
       letter-spacing: 0.5px;
@@ -301,7 +297,7 @@
     }
     .led-players .slash {
       color: #64748b;
-      margin: 0 6px;
+      margin: 0 5px;
       font-weight: 600;
     }
 
@@ -309,8 +305,8 @@
     .serve-indicator {
       display: inline-flex;
       align-items: center;
-      gap: 9px;
-      padding: 6px 14px;
+      gap: 8px;
+      padding: 5px 13px;
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(255, 255, 255, 0.08);
@@ -325,8 +321,8 @@
     }
 
     .pickleball-icon {
-      width: 24px;
-      height: 24px;
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
       background: var(--ball-neon);
       box-shadow: 0 0 14px var(--ball-glow);
@@ -339,13 +335,13 @@
       position: absolute;
       background: #1a2e05;
       border-radius: 50%;
-      width: 4px; height: 4px;
-      top: 5px; left: 5.5px;
-      box-shadow: 8.5px 0 0 #1a2e05, 4px 6px 0 #1a2e05, 0 11px 0 #1a2e05, 8.5px 11px 0 #1a2e05;
+      width: 3.5px; height: 3.5px;
+      top: 4.5px; left: 5px;
+      box-shadow: 8px 0 0 #1a2e05, 4px 5.5px 0 #1a2e05, 0 10px 0 #1a2e05, 8px 10px 0 #1a2e05;
     }
 
     .serve-num {
-      font-size: clamp(19px, 2.4vw, 30px);
+      font-size: clamp(18px, 2.2vw, 28px);
       font-weight: 900;
       color: var(--ball-neon);
       font-variant-numeric: tabular-nums;
@@ -358,24 +354,24 @@
       letter-spacing: 1px;
     }
 
-    /* LED 超大高對比數位比分 */
+    /* LED 超大高對比數位比分（兼顧橫向低高度螢幕不裁切） */
     .led-score-box {
       display: flex;
       align-items: center;
       justify-content: center;
-      min-width: 38%;
+      min-width: 36%;
     }
     .led-score {
-      font-size: clamp(104px, 25vw, 300px);
+      font-size: clamp(80px, min(22vw, 34dvh), 280px);
       font-weight: 900;
-      line-height: 0.88;
+      line-height: 0.9;
       font-variant-numeric: tabular-nums;
-      letter-spacing: -4px;
+      letter-spacing: -3px;
       color: #ffffff;
       transition: transform 0.15s ease, text-shadow 0.2s ease;
     }
     body.header-hidden .led-score {
-      font-size: clamp(120px, 28vw, 340px);
+      font-size: clamp(92px, min(25vw, 40dvh), 330px);
     }
     .led-side.side-a.serving .led-score {
       color: #e0f2fe;
@@ -387,11 +383,11 @@
     }
 
     /* 裁判遙控面板（進攻方防呆設計 + 防連點鎖定） */
-    .remote-controls { display: none; padding: 10px 12px 22px; background: var(--panel-bg); border-top: 1px solid #1f2937; flex-direction: column; gap: 8px; flex-shrink: 0; }
+    .remote-controls { display: none; padding: 10px 12px 18px; background: var(--panel-bg); border-top: 1px solid #1f2937; flex-direction: column; gap: 8px; flex-shrink: 0; }
     body.remote-mode .remote-controls { display: flex; }
-    body.remote-mode .led-score { font-size: clamp(68px, 15vw, 165px); }
-    body.remote-mode.header-hidden .led-score { font-size: clamp(76px, 17vw, 185px); }
-    body.remote-mode .led-stadium-wrap { padding: 8px 10px 8px; }
+    body.remote-mode .led-score { font-size: clamp(64px, min(14vw, 20dvh), 155px); }
+    body.remote-mode.header-hidden .led-score { font-size: clamp(72px, min(16vw, 23dvh), 180px); }
+    body.remote-mode .led-stadium-wrap { padding: 8px 10px 8px; min-height: 210px; }
     .remote-controls.busy { opacity: 0.7; pointer-events: none; }
 
     .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -504,17 +500,14 @@
 
     /* 角落低調製作者署名 */
     .creator-tag { text-align: right; padding: 2px 12px 6px; font-size: 10px; color: rgba(255, 255, 255, 0.25); pointer-events: none; letter-spacing: 0.4px; flex-shrink: 0; }
-    @media (min-width: 769px) {
-      .creator-tag { position: fixed; right: 14px; bottom: 4px; padding: 0; z-index: 5; }
-    }
 
     @keyframes bounce { from { transform: translateY(0) scale(1); } to { transform: translateY(-14px) scale(1.08); } }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes pulseLive { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
-    @media (max-width: 768px) {
-      .led-stadium-wrap { padding: 6px 8px; flex: 0 0 auto; }
-      .led-ribbon { flex-direction: column; flex: 0 0 auto; }
+    @media (max-width: 768px) and (orientation: portrait) {
+      .led-stadium-wrap { padding: 6px 8px; flex: 0 0 auto; min-height: 0; }
+      .led-ribbon { flex-direction: column; flex: 0 0 auto; min-height: 0; }
       .led-ribbon.swapped { flex-direction: column-reverse; }
       .led-side, .led-side.side-b, .led-ribbon.swapped .led-side.side-a, .led-ribbon.swapped .led-side.side-b {
         flex-direction: row;
@@ -897,7 +890,6 @@
       el._timer = setTimeout(() => el.classList.remove('show'), 2600);
     }
 
-    // 帶逾時保護的 Fetch，避免不同品牌手機在弱網下請求塞車卡住頁面
     async function fetchWithTimeout(url, options = {}, timeoutMs = 3500) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -1967,7 +1959,7 @@
       }
     }
 
-    // --- Firebase 雲端同步（防弱網塞車 + 喚醒立即同步） ---
+    // --- Firebase 雲端同步 ---
     function setBusyLock(busy) {
       isActionBusy = busy;
       document.getElementById('remote-controls').classList.toggle('busy', busy);
@@ -2081,7 +2073,6 @@
       }
     }
 
-    // 手機螢幕熄滅再點亮或切回分頁時，立刻同步最新狀態
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && ROOM_ID) {
         syncLoop(false);
