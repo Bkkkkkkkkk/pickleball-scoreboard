@@ -73,7 +73,7 @@
     .header-actions button.active { background: var(--ball-neon); color: #000; border-color: var(--ball-neon); font-weight: 800; }
     .header-actions button.btn-leave { background: #7f1d1d; border-color: #991b1b; color: #fecaca; }
 
-    /* 下一場預告單段跑馬燈橫幅（從最右進、左邊完全消失後再從最右出現） */
+    /* 下一場預告單段跑馬燈橫幅 */
     .next-marquee-bar {
       display: none;
       align-items: center;
@@ -354,7 +354,7 @@
       letter-spacing: 1px;
     }
 
-    /* LED 超大高對比數位比分（兼顧橫向低高度螢幕不裁切） */
+    /* LED 超大高對比數位比分 */
     .led-score-box {
       display: flex;
       align-items: center;
@@ -382,7 +382,7 @@
       text-shadow: 0 0 36px var(--team-b-glow);
     }
 
-    /* 裁判遙控面板（進攻方防呆設計 + 防連點鎖定） */
+    /* 裁判遙控面板 */
     .remote-controls { display: none; padding: 10px 12px 18px; background: var(--panel-bg); border-top: 1px solid #1f2937; flex-direction: column; gap: 8px; flex-shrink: 0; }
     body.remote-mode .remote-controls { display: flex; }
     body.remote-mode .led-score { font-size: clamp(64px, min(14vw, 20dvh), 155px); }
@@ -412,6 +412,12 @@
     .modal-overlay { position: fixed; inset: 0; background: rgba(3, 7, 18, 0.95); backdrop-filter: blur(6px); display: flex; justify-content: center; align-items: center; z-index: 100; padding: 16px; }
     .modal-card { background: #111827; border: 1px solid #374151; border-radius: 16px; max-width: 560px; width: 100%; padding: 22px; max-height: 90dvh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
     .modal-title { font-size: 20px; font-weight: 900; margin-bottom: 12px; color: var(--accent); text-align: center; }
+
+    /* Watch 捷徑說明卡片 */
+    .watch-code-box { background: #030712; border: 1px solid #334155; border-radius: 10px; padding: 10px 12px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #38bdf8; word-break: break-all; margin: 8px 0 10px; user-select: all; }
+    .watch-step-list { display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #cbd5e1; line-height: 1.5; margin-bottom: 14px; }
+    .watch-step-list li { background: #030712; border: 1px solid #1f2937; border-radius: 10px; padding: 10px 12px; list-style: none; }
+    .watch-step-list strong { color: var(--ball-neon); }
 
     /* 選手戰績總覽表 */
     .stats-sort-bar { display: flex; justify-content: flex-end; gap: 6px; margin-bottom: 10px; }
@@ -564,6 +570,7 @@
       <button onclick="requestWakeLock()">💡 防休眠:<span id="wakelock-status">關</span></button>
       <button id="btn-fullscreen" onclick="toggleFullscreenMode()">⛶ 全螢幕</button>
       <button onclick="toggleHeaderHidden(true)" title="隱藏上方工具列">🙈 藏頂列</button>
+      <button onclick="openWatchModal()" style="background:#0f766e; border-color:#14b8a6;">⌚ Watch 捷徑</button>
       <button onclick="openSetupModal()" style="background:#0284c7; border-color:#0284c7;">⚙️ 開局設定</button>
       <button id="btn-leave-room" class="btn-leave" onclick="leaveCurrentRoom()">🚪 離開房間</button>
     </div>
@@ -635,7 +642,7 @@
     </div>
   </div>
 
-  <!-- 裁判防呆遙控區（只有進攻方亮燈可按，防守方反灰鎖定） -->
+  <!-- 裁判防呆遙控區 -->
   <div id="remote-controls" class="remote-controls">
     <div id="control-grid" class="control-grid">
       <div id="ctrl-a" class="team-ctrl-box active-offense">
@@ -658,6 +665,30 @@
 
   <!-- 角落低調製作者署名 -->
   <div class="creator-tag">Made by 성진우</div>
+
+  <!-- Apple Watch 捷徑連動設定彈窗 -->
+  <div id="watch-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-title">⌚ Apple Watch 捷徑連動</div>
+      <p style="font-size:13px; color:#cbd5e1; margin-bottom:10px; line-height:1.5;">
+        透過 iOS「捷徑」呼叫下方專屬指令網址，抬起手腕即可遙控本場記分板：
+      </p>
+      <div style="font-size:12px; font-weight:bold; color:#94a3b8;">目前房間指令 URL（HTTP PUT / JSON）：</div>
+      <div id="watch-cmd-url" class="watch-code-box"></div>
+      <button type="button" class="btn-primary" style="margin-bottom:14px;" onclick="copyWatchCommandUrl()">📋 一鍵複製此房間指令 URL</button>
+
+      <ul class="watch-step-list">
+        <li>1. 在 iPhone「捷徑」建立「從選單中選擇」，放入 4 個選項，分別傳送 JSON 鍵值 <strong>action</strong>：</li>
+        <li>• <strong>SCORE</strong>：目前進攻方得分 +1（自動判斷藍／紅隊發球權）</li>
+        <li>• <strong>FAULT</strong>：進攻方失誤（1發變2發，或2發換邊發球）</li>
+        <li>• <strong>UNDO</strong>：復原上一步</li>
+        <li>• <strong>NEXT_MATCH</strong>：分出勝負後進入下一場並自動輪替陣容</li>
+        <li>2. 開啟捷徑右下角「ⓘ」→ 勾選<strong>「在 Apple Watch 上顯示」</strong>即可。</li>
+      </ul>
+
+      <button type="button" class="btn-util" style="width:100%;" onclick="closeWatchModal()">關閉</button>
+    </div>
+  </div>
 
   <!-- 「選手場數與勝率」總覽彈窗 -->
   <div id="stats-modal" class="modal-overlay hidden">
@@ -915,6 +946,31 @@
       return { actualGames, wins, losses, rateNum: wins / actualGames, rateText: `${pct}%` };
     }
 
+    // --- Watch 捷徑設定彈窗 ---
+    function getWatchCommandEndpoint() {
+      const rid = ROOM_ID || '你的房號';
+      return `${FIREBASE_DB_URL}/rooms/${encodeURIComponent(rid)}/command.json`;
+    }
+
+    function openWatchModal() {
+      document.getElementById('watch-cmd-url').innerText = getWatchCommandEndpoint();
+      document.getElementById('watch-modal').classList.remove('hidden');
+    }
+
+    function closeWatchModal() {
+      document.getElementById('watch-modal').classList.add('hidden');
+    }
+
+    async function copyWatchCommandUrl() {
+      const url = getWatchCommandEndpoint();
+      try {
+        await navigator.clipboard.writeText(url);
+        showToast(`✅ 已複製房號 [${ROOM_ID || '未進房'}] Watch 指令網址`);
+      } catch (e) {
+        prompt('請複製以下指令 URL 貼到 iPhone 捷徑：', url);
+      }
+    }
+
     // --- 全螢幕與隱藏頂部工具列 ---
     function isFullscreenActive() {
       return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
@@ -1018,6 +1074,7 @@
       document.getElementById('setup-modal').classList.add('hidden');
       document.getElementById('roster-modal').classList.add('hidden');
       document.getElementById('lobby-modal').classList.add('hidden');
+      document.getElementById('watch-modal').classList.add('hidden');
       renderStatsTable();
       document.getElementById('stats-modal').classList.remove('hidden');
     }
@@ -1091,6 +1148,7 @@
       document.getElementById('setup-modal').classList.add('hidden');
       document.getElementById('roster-modal').classList.add('hidden');
       document.getElementById('stats-modal').classList.add('hidden');
+      document.getElementById('watch-modal').classList.add('hidden');
       document.getElementById('victory-overlay').classList.add('hidden');
       refreshLobbyNewRoom();
       const savedRoom = localStorage.getItem(STORAGE_ROOM_KEY) || '';
@@ -1223,6 +1281,7 @@
       document.getElementById('lobby-modal').classList.add('hidden');
       document.getElementById('roster-modal').classList.add('hidden');
       document.getElementById('stats-modal').classList.add('hidden');
+      document.getElementById('watch-modal').classList.add('hidden');
       document.getElementById('victory-overlay').classList.add('hidden');
       document.getElementById('setup-room-tag').innerText = ROOM_ID;
       document.getElementById('setup-modal').classList.remove('hidden');
@@ -1252,6 +1311,7 @@
       }
       document.getElementById('setup-modal').classList.add('hidden');
       document.getElementById('stats-modal').classList.add('hidden');
+      document.getElementById('watch-modal').classList.add('hidden');
       document.getElementById('victory-overlay').classList.add('hidden');
       cancelPendingSub();
 
@@ -1959,7 +2019,7 @@
       }
     }
 
-    // --- Firebase 雲端同步 ---
+    // --- Firebase 雲端同步（含 Apple Watch 捷徑遠端指令處理） ---
     function setBusyLock(busy) {
       isActionBusy = busy;
       document.getElementById('remote-controls').classList.toggle('busy', busy);
@@ -1996,9 +2056,9 @@
       if (isActionBusy || !ROOM_ID) return;
       setBusyLock(true);
       try {
-        let normalizedAction = action;
-        if (action === 'POINT_A' || action === 'POINT_B') normalizedAction = 'SCORE';
-        if (action === 'SIDE_OUT') normalizedAction = 'FAULT';
+        let normalizedAction = String(action || '').trim().toUpperCase();
+        if (normalizedAction === 'POINT_A' || normalizedAction === 'POINT_B') normalizedAction = 'SCORE';
+        if (normalizedAction === 'SIDE_OUT') normalizedAction = 'FAULT';
 
         const latestRemote = await fetchLatestStateFromFirebase();
         const baseState = (latestRemote && latestRemote.initialized) ? latestRemote : currentState;
@@ -2037,9 +2097,14 @@
         const cmdRes = await fetchWithTimeout(`${FIREBASE_DB_URL}/rooms/${encodeURIComponent(ROOM_ID)}/command.json`);
         const cmd = await cmdRes.json();
         if (cmd && cmd.action) {
+          const remoteAction = String(cmd.action).trim().toUpperCase();
           await fetchWithTimeout(`${FIREBASE_DB_URL}/rooms/${encodeURIComponent(ROOM_ID)}/command.json`, { method: 'DELETE' });
           isSyncing = false;
-          await dispatchAction(cmd.action);
+          if (remoteAction === 'NEXT_MATCH') {
+            await handleNextMatch();
+          } else {
+            await dispatchAction(remoteAction);
+          }
           scheduleNextSync(800);
           return;
         }
