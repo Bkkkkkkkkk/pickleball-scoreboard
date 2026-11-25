@@ -30,6 +30,8 @@
     .header-actions { display: flex; gap: 6px; flex-wrap: wrap; }
     .header-actions button { background: #334155; color: #fff; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; transition: 0.15s; }
     .header-actions button.active { background: var(--accent); color: #000; }
+    .header-actions button.btn-leave { background: #7f1d1d; color: #fecaca; }
+    .header-actions button.btn-leave:hover { background: #991b1b; }
 
     /* 休閒輪轉狀態橫幅 */
     .rotation-bar { display: none; background: #0f172a; border-bottom: 1px solid #334155; padding: 6px 14px; font-size: 13px; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
@@ -143,7 +145,7 @@
     <div class="room-badge">
       <span id="conn-dot" class="status-dot"></span>
       <span>房號：<strong id="room-label">未進房</strong></span>
-      <button class="btn-share-mini" onclick="shareRoomLink()">🔗 分享</button>
+      <button id="btn-share-header" class="btn-share-mini" onclick="shareRoomLink()">🔗 分享</button>
       <span id="mode-badge" style="color:#facc15; font-weight:bold; margin-left:4px;"></span>
     </div>
     <div class="header-actions">
@@ -152,8 +154,8 @@
       <button onclick="toggleSwap()">⇄ 左右換邊</button>
       <button onclick="toggleVoice()">🔊 語音:<span id="voice-status">關</span></button>
       <button onclick="requestWakeLock()">💡 防休眠:<span id="wakelock-status">關</span></button>
-      <button onclick="openLobbyModal()" style="background:#334155;">🚪 換房號</button>
       <button onclick="openSetupModal()" style="background:#0284c7;">⚙️ 開局設定</button>
+      <button id="btn-leave-room" class="btn-leave" onclick="leaveCurrentRoom()">🚪 離開房間</button>
     </div>
   </header>
 
@@ -316,26 +318,54 @@
       return (raw || '').trim().replace(/[.#$\[\]\/]/g, '-');
     }
 
+    function createEmptyState() {
+      return {
+        initialized: false,
+        mode: 'standard',
+        targetScore: 11,
+        winByTwo: true,
+        sideChangeAt6: true,
+        scoreA: 0,
+        scoreB: 0,
+        servingTeam: 'A',
+        serverNumber: 2,
+        teamAName: '藍隊',
+        teamBName: '紅隊',
+        players: [],
+        courtSlots: [],
+        seqPointer: 0,
+        nextPreviewText: '',
+        winner: null,
+        history: [],
+        updatedAt: 0
+      };
+    }
+
     function setActiveRoom(roomId, syncUrl = true) {
-      ROOM_ID = roomId;
-      document.getElementById('room-label').innerText = roomId || '未進房';
-      document.getElementById('setup-room-tag').innerText = roomId || '';
-      if (roomId) {
-        localStorage.setItem(STORAGE_ROOM_KEY, roomId);
+      ROOM_ID = roomId || '';
+      document.getElementById('room-label').innerText = ROOM_ID || '未進房';
+      document.getElementById('setup-room-tag').innerText = ROOM_ID || '';
+      document.getElementById('btn-leave-room').style.display = ROOM_ID ? 'inline-block' : 'none';
+      document.getElementById('btn-share-header').style.display = ROOM_ID ? 'inline-block' : 'none';
+
+      if (ROOM_ID) {
+        localStorage.setItem(STORAGE_ROOM_KEY, ROOM_ID);
         if (syncUrl) {
           const url = new URL(window.location.href);
-          url.searchParams.set('room', roomId);
+          url.searchParams.set('room', ROOM_ID);
           window.history.replaceState({}, '', url.toString());
         }
+      } else if (syncUrl) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('room');
+        window.history.replaceState({}, '', url.toString());
       }
     }
 
     const urlParams = new URLSearchParams(window.location.search);
     const initialParamRoom = sanitizeRoomId(urlParams.get('room'));
     let ROOM_ID = initialParamRoom || '';
-    if (ROOM_ID) {
-      setActiveRoom(ROOM_ID, true);
-    }
+    setActiveRoom(ROOM_ID, Boolean(ROOM_ID));
 
     let selectedSetupMode = 'standard';
     let voiceEnabled = false;
@@ -343,6 +373,7 @@
     let isSwapped = false;
     let sideChangeNotified = false;
     let isActionBusy = false;
+    let currentState = createEmptyState();
 
     function showToast(msg) {
       const el = document.getElementById('toast');
@@ -386,7 +417,7 @@
       copyOrShareUrl(ROOM_ID);
     }
 
-    // --- 房號入口畫面控制 ---
+    // --- 房號入口畫面與離開房間 ---
     function openLobbyModal() {
       document.getElementById('setup-modal').classList.add('hidden');
       document.getElementById('victory-overlay').classList.add('hidden');
@@ -406,8 +437,9 @@
 
     async function createAndEnterNewRoom() {
       const freshCode = createRandomRoomCode();
+      currentState = createEmptyState();
       setActiveRoom(freshCode, true);
-      currentState.initialized = false;
+      render(currentState, false);
       closeLobbyModal();
       openSetupModal();
       showToast(`✨ 已產生新房號 [${freshCode}]，請設定模式並開局`);
@@ -419,11 +451,26 @@
         showToast('請先輸入房號');
         return;
       }
+      currentState = createEmptyState();
       setActiveRoom(inputVal, true);
-      currentState.initialized = false;
+      render(currentState, false);
       closeLobbyModal();
       showToast(`🤝 正在連線至房號 [${inputVal}]...`);
       await syncLoop(true);
+    }
+
+    function leaveCurrentRoom() {
+      if (!ROOM_ID) {
+        openLobbyModal();
+        return;
+      }
+      const leftRoom = ROOM_ID;
+      setActiveRoom('', true);
+      currentState = createEmptyState();
+      sideChangeNotified = false;
+      render(currentState, false);
+      openLobbyModal();
+      showToast(`🚪 已離開房號 [${leftRoom}]`);
     }
 
     // --- 自動清理超過 24 小時沒動靜的過期房間 ---
@@ -456,28 +503,6 @@
         }
       } catch (e) {}
     }
-
-    // 預設完整賽局狀態
-    let currentState = {
-      initialized: false,
-      mode: 'standard',
-      targetScore: 11,
-      winByTwo: true,
-      sideChangeAt6: true,
-      scoreA: 0,
-      scoreB: 0,
-      servingTeam: 'A',
-      serverNumber: 2,
-      teamAName: '藍隊',
-      teamBName: '紅隊',
-      players: [],
-      courtSlots: [],
-      seqPointer: 0,
-      nextPreviewText: '',
-      winner: null,
-      history: [],
-      updatedAt: 0
-    };
 
     // --- UI 切換與基礎設定 ---
     function setViewMode(mode) {
