@@ -213,7 +213,7 @@
           <button type="button" class="btn-room-tool" onclick="generateRandomRoomInModal()">🎲 隨機新房號</button>
           <button type="button" class="btn-room-tool primary" onclick="shareRoomLinkFromModal()">🔗 分享連結</button>
         </div>
-        <div class="room-hint">💡 產生新房號後點「分享連結」傳給同場球友，大家點開即可同步看分或輪流當裁判。</div>
+        <div class="room-hint">💡 產生新房號後點「分享連結」傳給同場球友，大家點開即可同步看分或輪流當裁判；超過 24 小時未使用的舊房號會自動清理。</div>
       </div>
 
       <div class="mode-cards">
@@ -281,6 +281,9 @@
   <script>
     const FIREBASE_DB_URL = "https://pickleball-score-8ec8a-default-rtdb.asia-southeast1.firebasedatabase.app";
     const STORAGE_ROOM_KEY = "pb_last_room_id";
+    const STORAGE_LAST_CLEANUP_KEY = "pb_last_cleanup_ts";
+    const ROOM_TTL_MS = 24 * 60 * 60 * 1000; // 超過 24 小時視為過期房間
+    const CLEANUP_COOLDOWN_MS = 10 * 60 * 1000; // 清理檢查每 10 分鐘最多跑一次
 
     function createRandomRoomCode() {
       const num = Math.floor(1000 + Math.random() * 9000);
@@ -300,7 +303,6 @@
       document.getElementById('room-label').innerText = roomId;
     }
 
-    // 初始化房號：網址參數 > 本機上次房號 > 自動產生隨機獨立房號
     const urlParams = new URLSearchParams(window.location.search);
     let ROOM_ID = sanitizeRoomId(urlParams.get('room') || localStorage.getItem(STORAGE_ROOM_KEY) || createRandomRoomCode());
     updateRoomUrlAndStorage(ROOM_ID);
@@ -310,7 +312,7 @@
     let wakeLock = null;
     let isSwapped = false;
     let sideChangeNotified = false;
-    let isActionBusy = false; // 防連點鎖定
+    let isActionBusy = false;
 
     function showToast(msg) {
       const el = document.getElementById('toast');
@@ -336,9 +338,7 @@
             url: shareUrl
           });
           return;
-        } catch (e) {
-          // 使用者取消分享或裝置不支援時改走複製連結
-        }
+        } catch (e) {}
       }
       try {
         await navigator.clipboard.writeText(shareUrl);
@@ -364,6 +364,39 @@
       showToast(`🎲 已產生新房號：${newCode}`);
     }
 
+    // --- 自動清理超過 24 小時沒動靜的過期房間 ---
+    async function cleanupExpiredRooms(force = false) {
+      const now = Date.now();
+      const lastCleanup = parseInt(localStorage.getItem(STORAGE_LAST_CLEANUP_KEY) || '0', 10);
+      if (!force && now - lastCleanup < CLEANUP_COOLDOWN_MS) return;
+
+      localStorage.setItem(STORAGE_LAST_CLEANUP_KEY, String(now));
+      try {
+        const res = await fetch(`${FIREBASE_DB_URL}/rooms.json`);
+        if (!res.ok) return;
+        const rooms = await res.json();
+        if (!rooms || typeof rooms !== 'object') return;
+
+        const deletePromises = [];
+        for (const [roomKey, roomData] of Object.entries(rooms)) {
+          if (roomKey === ROOM_ID) continue; // 永遠不刪目前正在使用的房間
+          const updatedAt = roomData && roomData.state && typeof roomData.state.updatedAt === 'number'
+            ? roomData.state.updatedAt
+            : 0;
+          if (!updatedAt || (now - updatedAt > ROOM_TTL_MS)) {
+            deletePromises.push(
+              fetch(`${FIREBASE_DB_URL}/rooms/${encodeURIComponent(roomKey)}.json`, { method: 'DELETE' })
+            );
+          }
+        }
+        if (deletePromises.length > 0) {
+          await Promise.allSettled(deletePromises);
+        }
+      } catch (e) {
+        // 清理失敗不影響正常計分
+      }
+    }
+
     // 預設完整賽局狀態
     let currentState = {
       initialized: false,
@@ -382,7 +415,8 @@
       seqPointer: 0,
       nextPreviewText: '',
       winner: null,
-      history: []
+      history: [],
+      updatedAt: 0
     };
 
     // --- UI 切換與基礎設定 ---
@@ -485,6 +519,7 @@
     // 建立全新賽局並同步至 Firebase（含房號切換）
     async function startNewMatchFromSetup() {
       const targetRoom = sanitizeRoomId(document.getElementById('opt-room-id').value);
+      const roomChanged = targetRoom !== ROOM_ID;
       ROOM_ID = targetRoom;
       updateRoomUrlAndStorage(ROOM_ID);
 
@@ -497,7 +532,8 @@
         servingTeam: 'A',
         serverNumber: 2,
         winner: null,
-        history: []
+        history: [],
+        updatedAt: Date.now()
       };
 
       if (selectedSetupMode === 'standard') {
@@ -526,6 +562,7 @@
       currentState = next;
       render(currentState, false);
       await saveStateToFirebase(currentState);
+      if (roomChanged) cleanupExpiredRooms();
       showToast(`🚀 已在房號 [${ROOM_ID}] 開啟新賽局`);
     }
 
@@ -572,6 +609,7 @@
           next.nextPreviewText = computeNextPreview(next);
         }
 
+        next.updatedAt = Date.now();
         document.getElementById('victory-overlay').classList.add('hidden');
         currentState = next;
         render(currentState, false);
@@ -764,7 +802,7 @@
 
     async function fetchLatestStateFromFirebase() {
       try {
-        const res = await fetch(`${FIREBASE_DB_URL}/rooms/${ROOM_ID}/state.json`);
+        const res = await fetch(`${FIREBASE_DB_URL}/rooms/${encodeURIComponent(ROOM_ID)}/state.json`);
         const data = await res.json();
         document.getElementById('conn-dot').classList.remove('offline');
         return data;
@@ -776,9 +814,10 @@
 
     async function saveStateToFirebase(state) {
       try {
-        await fetch(`${FIREBASE_DB_URL}/rooms/${ROOM_ID}/state.json`, {
+        const payload = { ...state, updatedAt: Date.now() };
+        await fetch(`${FIREBASE_DB_URL}/rooms/${encodeURIComponent(ROOM_ID)}/state.json`, {
           method: 'PUT',
-          body: JSON.stringify(state)
+          body: JSON.stringify(payload)
         });
         document.getElementById('conn-dot').classList.remove('offline');
       } catch (e) {
@@ -794,11 +833,11 @@
         if (action === 'POINT_A' || action === 'POINT_B') normalizedAction = 'SCORE';
         if (action === 'SIDE_OUT') normalizedAction = 'FAULT';
 
-        // 先讀取雲端最新狀態再計算，避免兩支手機輪流裁判時用舊畫面覆蓋新比分
         const latestRemote = await fetchLatestStateFromFirebase();
         const baseState = (latestRemote && latestRemote.initialized) ? latestRemote : currentState;
 
         const nextState = processLogic(baseState, normalizedAction);
+        nextState.updatedAt = Date.now();
         currentState = nextState;
         render(currentState, true);
         await saveStateToFirebase(currentState);
@@ -810,10 +849,10 @@
     async function syncLoop() {
       if (isActionBusy) return;
       try {
-        const cmdRes = await fetch(`${FIREBASE_DB_URL}/rooms/${ROOM_ID}/command.json`);
+        const cmdRes = await fetch(`${FIREBASE_DB_URL}/rooms/${encodeURIComponent(ROOM_ID)}/command.json`);
         const cmd = await cmdRes.json();
         if (cmd && cmd.action) {
-          await fetch(`${FIREBASE_DB_URL}/rooms/${ROOM_ID}/command.json`, { method: 'DELETE' });
+          await fetch(`${FIREBASE_DB_URL}/rooms/${encodeURIComponent(ROOM_ID)}/command.json`, { method: 'DELETE' });
           await dispatchAction(cmd.action);
           return;
         }
@@ -841,6 +880,7 @@
     }
 
     syncLoop();
+    cleanupExpiredRooms();
     setInterval(syncLoop, 800);
   </script>
 </body>
