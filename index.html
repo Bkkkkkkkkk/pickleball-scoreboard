@@ -35,182 +35,6 @@
       overflow-y: auto;
     }
 
-    /* =========================================================
-       常駐極簡遙控模式 (?watch=1) — 支援直接填／換房號
-       ========================================================= */
-    .watch-shell {
-      display: none;
-      flex-direction: column;
-      justify-content: space-between;
-      min-height: 100vh;
-      min-height: 100dvh;
-      padding: 6px 8px 10px;
-      background: #000000;
-      gap: 6px;
-    }
-    body.watch-mode .watch-shell { display: flex; }
-    body.watch-mode header,
-    body.watch-mode .next-marquee-bar,
-    body.watch-mode .alert-banner,
-    body.watch-mode .led-stadium-wrap,
-    body.watch-mode .remote-controls,
-    body.watch-mode .restore-header-btn,
-    body.watch-mode .creator-tag {
-      display: none !important;
-    }
-
-    .watch-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 11px;
-      color: #94a3b8;
-      padding: 2px 4px;
-      gap: 6px;
-    }
-    .watch-room-group {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      flex-wrap: wrap;
-    }
-    .watch-room-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      background: #111827;
-      border: 1px solid #334155;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-weight: 800;
-      color: #38bdf8;
-    }
-    .watch-mini-btn {
-      background: #1f2937;
-      color: #e2e8f0;
-      border: 1px solid #374151;
-      border-radius: 8px;
-      padding: 4px 8px;
-      font-size: 11px;
-      font-weight: 800;
-      cursor: pointer;
-    }
-    .watch-mini-btn:active { transform: scale(0.94); }
-
-    .watch-room-editor {
-      display: flex;
-      gap: 6px;
-      background: #0b0f17;
-      border: 1px solid #38bdf8;
-      border-radius: 10px;
-      padding: 6px;
-      align-items: center;
-    }
-    .watch-room-editor input {
-      flex: 1;
-      padding: 6px 8px;
-      font-size: 13px;
-      font-weight: 800;
-      color: #facc15;
-      background: #030712;
-      border: 1px solid #374151;
-      border-radius: 6px;
-    }
-    .watch-room-save {
-      background: #0284c7;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      padding: 6px 10px;
-      font-size: 12px;
-      font-weight: 800;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    .watch-scoreboard {
-      background: #0b0f17;
-      border: 1px solid #1e293b;
-      border-radius: 14px;
-      padding: 6px 8px;
-      text-align: center;
-    }
-    .watch-offense-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 12px;
-      font-weight: 900;
-      color: var(--ball-neon);
-      margin-bottom: 2px;
-    }
-    .watch-score-row {
-      display: flex;
-      justify-content: center;
-      align-items: baseline;
-      gap: 10px;
-      font-variant-numeric: tabular-nums;
-    }
-    .watch-num {
-      font-size: 40px;
-      font-weight: 900;
-      line-height: 1;
-      color: #64748b;
-      transition: color 0.15s, transform 0.15s;
-    }
-    .watch-num.active-a {
-      color: #38bdf8;
-      text-shadow: 0 0 14px rgba(56, 189, 248, 0.6);
-      transform: scale(1.06);
-    }
-    .watch-num.active-b {
-      color: #fb7185;
-      text-shadow: 0 0 14px rgba(251, 113, 133, 0.6);
-      transform: scale(1.06);
-    }
-    .watch-colon {
-      font-size: 26px;
-      font-weight: 800;
-      color: #475569;
-    }
-    .watch-teams-sub {
-      font-size: 11px;
-      color: #94a3b8;
-      margin-top: 3px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .watch-actions {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      min-height: 0;
-    }
-    .watch-btn {
-      flex: 1;
-      border: none;
-      border-radius: 16px;
-      font-size: 19px;
-      font-weight: 900;
-      color: #fff;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 10px 8px;
-      transition: transform 0.08s ease, opacity 0.15s;
-    }
-    .watch-btn:active { transform: scale(0.95); opacity: 0.88; }
-    .watch-btn.score-a { background: linear-gradient(135deg, #0284c7, #0ea5e9); }
-    .watch-btn.score-b { background: linear-gradient(135deg, #be123c, #f43f5e); }
-    .watch-btn.fault { background: #f59e0b; color: #000; font-size: 17px; }
-    .watch-btn.next { background: var(--ball-neon); color: #000; font-size: 18px; }
-    .watch-btn small { font-size: 11px; font-weight: 700; opacity: 0.85; margin-top: 2px; }
-
     /* 頂部功能列 */
     header { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: var(--panel-bg); font-size: 13px; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid #1f2937; z-index: 10; transition: all 0.2s ease; flex-shrink: 0; }
     body.header-hidden header { display: none; }
@@ -590,7 +414,7 @@
     .modal-title { font-size: 20px; font-weight: 900; margin-bottom: 12px; color: var(--accent); text-align: center; }
 
     /* Watch 捷徑說明卡片 */
-    .watch-code-box { background: #030712; border: 1px solid #334155; border-radius: 10px; padding: 10px 12px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #38bdf8; word-break: break-all; margin: 6px 0 10px; user-select: all; }
+    .watch-code-box { background: #030712; border: 1px solid #334155; border-radius: 10px; padding: 10px 12px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #38bdf8; word-break: break-all; margin: 8px 0 10px; user-select: all; }
     .watch-step-list { display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #cbd5e1; line-height: 1.5; margin-bottom: 14px; }
     .watch-step-list li { background: #030712; border: 1px solid #1f2937; border-radius: 10px; padding: 10px 12px; list-style: none; }
     .watch-step-list strong { color: var(--ball-neon); }
@@ -727,50 +551,6 @@
 </head>
 <body>
 
-  <!-- 常駐極簡遙控模式介面（任何人都能直接填／換房號） -->
-  <div id="watch-shell" class="watch-shell">
-    <div class="watch-top">
-      <div class="watch-room-group">
-        <span class="watch-room-pill">
-          <span id="watch-dot" class="status-dot"></span>
-          <span id="watch-room-label">未填房號</span>
-        </span>
-        <button type="button" class="watch-mini-btn" onclick="toggleWatchRoomEditor()">改房號</button>
-      </div>
-      <button type="button" class="watch-mini-btn" onclick="dispatchAction('UNDO')">↩️ 復原</button>
-    </div>
-
-    <div id="watch-room-editor" class="watch-room-editor hidden">
-      <input type="text" id="watch-room-input" placeholder="輸入房號，如 pb-6428">
-      <button type="button" class="watch-room-save" onclick="applyWatchRoomFromInput()">連線</button>
-    </div>
-
-    <div class="watch-scoreboard">
-      <div class="watch-offense-tag" id="watch-offense-tag">● 藍隊進攻・第 2 發</div>
-      <div class="watch-score-row">
-        <span id="watch-score-a" class="watch-num active-a">0</span>
-        <span class="watch-colon">:</span>
-        <span id="watch-score-b" class="watch-num">0</span>
-      </div>
-      <div class="watch-teams-sub" id="watch-teams-sub">藍隊 vs 紅隊</div>
-    </div>
-
-    <div class="watch-actions">
-      <button type="button" id="watch-btn-score" class="watch-btn score-a" onclick="dispatchAction('SCORE')">
-        ＋ 進攻方得分
-        <small id="watch-score-hint">目前：藍隊</small>
-      </button>
-      <button type="button" id="watch-btn-fault" class="watch-btn fault" onclick="dispatchAction('FAULT')">
-        ✕ 失誤換發
-        <small id="watch-fault-hint">第 2 發失誤即換邊</small>
-      </button>
-      <button type="button" id="watch-btn-next" class="watch-btn next hidden" onclick="handleNextMatch()">
-        ▶️ 進入下一場
-        <small>記錄本局並自動輪替</small>
-      </button>
-    </div>
-  </div>
-
   <!-- 頂部列隱藏時的角落喚回按鈕 -->
   <button id="restore-header-btn" class="restore-header-btn" onclick="toggleHeaderHidden(false)">☰ 工具列</button>
 
@@ -785,12 +565,12 @@
     <div class="header-actions">
       <button id="btn-display" class="active" onclick="setViewMode('display')">LED 看板</button>
       <button id="btn-remote" onclick="setViewMode('remote')">裁判遙控器</button>
-      <button onclick="enterWatchMode()">⌚ 常駐遙控</button>
       <button onclick="toggleSwap()">⇄ 左右換邊</button>
       <button onclick="toggleVoice()">🔊 語音:<span id="voice-status">關</span></button>
       <button onclick="requestWakeLock()">💡 防休眠:<span id="wakelock-status">關</span></button>
       <button id="btn-fullscreen" onclick="toggleFullscreenMode()">⛶ 全螢幕</button>
       <button onclick="toggleHeaderHidden(true)" title="隱藏上方工具列">🙈 藏頂列</button>
+      <button onclick="openWatchModal()" style="background:#0f766e; border-color:#14b8a6;">⌚ Watch 捷徑</button>
       <button onclick="openSetupModal()" style="background:#0284c7; border-color:#0284c7;">⚙️ 開局設定</button>
       <button id="btn-leave-room" class="btn-leave" onclick="leaveCurrentRoom()">🚪 離開房間</button>
     </div>
@@ -820,6 +600,7 @@
     </div>
 
     <div id="board" class="led-ribbon">
+      <!-- 藍隊 LED 區塊 -->
       <div id="panel-a" class="led-side side-a serving">
         <div class="led-info">
           <div class="team-tag-row">
@@ -840,6 +621,7 @@
 
       <div class="led-center-divider"></div>
 
+      <!-- 紅隊 LED 區塊 -->
       <div id="panel-b" class="led-side side-b">
         <div class="led-info">
           <div class="team-tag-row">
@@ -883,6 +665,30 @@
 
   <!-- 角落低調製作者署名 -->
   <div class="creator-tag">Made by 성진우</div>
+
+  <!-- Apple Watch 捷徑連動設定彈窗 -->
+  <div id="watch-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-title">⌚ Apple Watch 捷徑連動</div>
+      <p style="font-size:13px; color:#cbd5e1; margin-bottom:10px; line-height:1.5;">
+        透過 iOS「捷徑」呼叫下方專屬指令網址，抬起手腕即可遙控本場記分板：
+      </p>
+      <div style="font-size:12px; font-weight:bold; color:#94a3b8;">目前房間指令 URL（HTTP PUT / JSON）：</div>
+      <div id="watch-cmd-url" class="watch-code-box"></div>
+      <button type="button" class="btn-primary" style="margin-bottom:14px;" onclick="copyWatchCommandUrl()">📋 一鍵複製此房間指令 URL</button>
+
+      <ul class="watch-step-list">
+        <li>1. 在 iPhone「捷徑」建立「從選單中選擇」，放入 4 個選項，分別傳送 JSON 鍵值 <strong>action</strong>：</li>
+        <li>• <strong>SCORE</strong>：目前進攻方得分 +1（自動判斷藍／紅隊發球權）</li>
+        <li>• <strong>FAULT</strong>：進攻方失誤（1發變2發，或2發換邊發球）</li>
+        <li>• <strong>UNDO</strong>：復原上一步</li>
+        <li>• <strong>NEXT_MATCH</strong>：分出勝負後進入下一場並自動輪替陣容</li>
+        <li>2. 開啟捷徑右下角「ⓘ」→ 勾選<strong>「在 Apple Watch 上顯示」</strong>即可。</li>
+      </ul>
+
+      <button type="button" class="btn-util" style="width:100%;" onclick="closeWatchModal()">關閉</button>
+    </div>
+  </div>
 
   <!-- 「選手場數與勝率」總覽彈窗 -->
   <div id="stats-modal" class="modal-overlay hidden">
@@ -1064,16 +870,9 @@
       };
     }
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const isWatchParam = urlParams.get('watch') === '1';
-    if (isWatchParam) {
-      document.body.classList.add('watch-mode');
-    }
-
     function setActiveRoom(roomId, syncUrl = true) {
       ROOM_ID = roomId || '';
       document.getElementById('room-label').innerText = ROOM_ID || '未進房';
-      document.getElementById('watch-room-label').innerText = ROOM_ID || '未填房號';
       document.getElementById('setup-room-tag').innerText = ROOM_ID || '';
       document.getElementById('btn-leave-room').style.display = ROOM_ID ? 'inline-block' : 'none';
       document.getElementById('btn-share-header').style.display = ROOM_ID ? 'inline-block' : 'none';
@@ -1092,10 +891,10 @@
       }
     }
 
+    const urlParams = new URLSearchParams(window.location.search);
     const initialParamRoom = sanitizeRoomId(urlParams.get('room'));
-    const fallbackRoom = isWatchParam ? sanitizeRoomId(localStorage.getItem(STORAGE_ROOM_KEY) || '') : '';
-    let ROOM_ID = initialParamRoom || fallbackRoom || '';
-    setActiveRoom(ROOM_ID, Boolean(initialParamRoom));
+    let ROOM_ID = initialParamRoom || '';
+    setActiveRoom(ROOM_ID, Boolean(ROOM_ID));
 
     let selectedSetupMode = 'standard';
     let voiceEnabled = false;
@@ -1147,44 +946,29 @@
       return { actualGames, wins, losses, rateNum: wins / actualGames, rateText: `${pct}%` };
     }
 
-    // --- 常駐遙控模式切換與填寫房號 ---
-    function enterWatchMode() {
-      document.body.classList.add('watch-mode');
-      const url = new URL(window.location.href);
-      url.searchParams.set('watch', '1');
-      if (ROOM_ID) url.searchParams.set('room', ROOM_ID);
-      window.history.replaceState({}, '', url.toString());
-      if (!ROOM_ID) {
-        document.getElementById('watch-room-editor').classList.remove('hidden');
-        document.getElementById('watch-room-input').value = localStorage.getItem(STORAGE_ROOM_KEY) || '';
-      }
-      renderWatchShell(currentState);
+    // --- Watch 捷徑設定彈窗 ---
+    function getWatchCommandEndpoint() {
+      const rid = ROOM_ID || '你的房號';
+      return `${FIREBASE_DB_URL}/rooms/${encodeURIComponent(rid)}/command.json`;
     }
 
-    function toggleWatchRoomEditor() {
-      const editor = document.getElementById('watch-room-editor');
-      const input = document.getElementById('watch-room-input');
-      const willShow = editor.classList.contains('hidden');
-      editor.classList.toggle('hidden', !willShow);
-      if (willShow) {
-        input.value = ROOM_ID || localStorage.getItem(STORAGE_ROOM_KEY) || '';
-        input.focus();
-      }
+    function openWatchModal() {
+      document.getElementById('watch-cmd-url').innerText = getWatchCommandEndpoint();
+      document.getElementById('watch-modal').classList.remove('hidden');
     }
 
-    async function applyWatchRoomFromInput() {
-      const raw = document.getElementById('watch-room-input').value;
-      const cleaned = sanitizeRoomId(raw);
-      if (!cleaned) {
-        showToast('請輸入房號');
-        return;
+    function closeWatchModal() {
+      document.getElementById('watch-modal').classList.add('hidden');
+    }
+
+    async function copyWatchCommandUrl() {
+      const url = getWatchCommandEndpoint();
+      try {
+        await navigator.clipboard.writeText(url);
+        showToast(`✅ 已複製房號 [${ROOM_ID || '未進房'}] Watch 指令網址`);
+      } catch (e) {
+        prompt('請複製以下指令 URL 貼到 iPhone 捷徑：', url);
       }
-      currentState = createEmptyState();
-      setActiveRoom(cleaned, true);
-      document.getElementById('watch-room-editor').classList.add('hidden');
-      renderWatchShell(currentState);
-      showToast(`已切換至房號 [${cleaned}]`);
-      await syncLoop(false);
     }
 
     // --- 全螢幕與隱藏頂部工具列 ---
@@ -1195,7 +979,7 @@
     function toggleHeaderHidden(hide) {
       document.body.classList.toggle('header-hidden', hide);
       if (hide) {
-        showToast('已隱藏頂部列，點右上角「☰ 工具列」可叫回');
+        showToast('🙈 已隱藏頂部列，點右上角「☰ 工具列」可叫回');
       }
     }
 
@@ -1211,7 +995,7 @@
           }
           document.body.classList.add('header-hidden');
           btn.classList.add('active');
-          showToast('已進入全螢幕模式');
+          showToast('⛶ 已進入全螢幕模式');
         } else {
           if (document.exitFullscreen) {
             await document.exitFullscreen();
@@ -1225,7 +1009,7 @@
         const nextHidden = !document.body.classList.contains('header-hidden');
         document.body.classList.toggle('header-hidden', nextHidden);
         btn.classList.toggle('active', nextHidden);
-        showToast(nextHidden ? '已切換沉浸式隱藏頂列' : '已恢復頂部列');
+        showToast(nextHidden ? '⛶ 已切換沉浸式隱藏頂列' : '已恢復頂部列');
       }
     }
 
@@ -1267,7 +1051,7 @@
       }
       try {
         await navigator.clipboard.writeText(shareUrl);
-        showToast(`已複製房號 [${roomId}] 專屬連結`);
+        showToast(`✅ 已複製房號 [${roomId}] 專屬連結，快貼給球友吧！`);
       } catch (e) {
         prompt('請複製以下連結分享給球友：', shareUrl);
       }
@@ -1290,6 +1074,7 @@
       document.getElementById('setup-modal').classList.add('hidden');
       document.getElementById('roster-modal').classList.add('hidden');
       document.getElementById('lobby-modal').classList.add('hidden');
+      document.getElementById('watch-modal').classList.add('hidden');
       renderStatsTable();
       document.getElementById('stats-modal').classList.remove('hidden');
     }
@@ -1363,6 +1148,7 @@
       document.getElementById('setup-modal').classList.add('hidden');
       document.getElementById('roster-modal').classList.add('hidden');
       document.getElementById('stats-modal').classList.add('hidden');
+      document.getElementById('watch-modal').classList.add('hidden');
       document.getElementById('victory-overlay').classList.add('hidden');
       refreshLobbyNewRoom();
       const savedRoom = localStorage.getItem(STORAGE_ROOM_KEY) || '';
@@ -1385,7 +1171,7 @@
       render(currentState, false);
       closeLobbyModal();
       openSetupModal();
-      showToast(`已產生新房號 [${freshCode}]，請設定模式並開局`);
+      showToast(`✨ 已產生新房號 [${freshCode}]，請設定模式並開局`);
     }
 
     async function joinExistingRoom() {
@@ -1398,7 +1184,7 @@
       setActiveRoom(inputVal, true);
       render(currentState, false);
       closeLobbyModal();
-      showToast(`正在連線至房號 [${inputVal}]...`);
+      showToast(`🤝 正在連線至房號 [${inputVal}]...`);
       await syncLoop(true);
     }
 
@@ -1413,7 +1199,7 @@
       sideChangeNotified = false;
       render(currentState, false);
       openLobbyModal();
-      showToast(`已離開房號 [${leftRoom}]`);
+      showToast(`🚪 已離開房號 [${leftRoom}]`);
     }
 
     // --- 自動清理超過 24 小時沒動靜的過期房間 ---
@@ -1449,12 +1235,11 @@
 
     // --- UI 切換與基礎設定 ---
     function setViewMode(mode) {
-      document.body.classList.remove('watch-mode');
       document.body.classList.toggle('remote-mode', mode === 'remote');
       document.getElementById('btn-display').classList.toggle('active', mode === 'display');
       document.getElementById('btn-remote').classList.toggle('active', mode === 'remote');
       if (mode === 'remote') {
-        showToast('已切換為裁判遙控模式（只有發球方亮燈可按）');
+        showToast('📱 已切換為裁判遙控模式（只有發球方亮燈可按）');
       }
     }
 
@@ -1496,6 +1281,7 @@
       document.getElementById('lobby-modal').classList.add('hidden');
       document.getElementById('roster-modal').classList.add('hidden');
       document.getElementById('stats-modal').classList.add('hidden');
+      document.getElementById('watch-modal').classList.add('hidden');
       document.getElementById('victory-overlay').classList.add('hidden');
       document.getElementById('setup-room-tag').innerText = ROOM_ID;
       document.getElementById('setup-modal').classList.remove('hidden');
@@ -1525,6 +1311,7 @@
       }
       document.getElementById('setup-modal').classList.add('hidden');
       document.getElementById('stats-modal').classList.add('hidden');
+      document.getElementById('watch-modal').classList.add('hidden');
       document.getElementById('victory-overlay').classList.add('hidden');
       cancelPendingSub();
 
@@ -1587,7 +1374,7 @@
       });
       input.value = '';
       renderRosterList();
-      showToast(`已加入「${name}」`);
+      showToast(`➕ 已加入「${name}」`);
     }
 
     function toggleSkipOnce(idx) {
@@ -1624,7 +1411,7 @@
       pendingSubSlotPos = slotPos;
       pendingSubMode = 'skip_once';
       const box = document.getElementById('sub-picker-box');
-      document.getElementById('sub-picker-title').innerText = `「${target.name}」臨時跳過本場，要派誰頂上？`;
+      document.getElementById('sub-picker-title').innerText = `🔄 「${target.name}」臨時跳過本場，要派誰頂上？`;
       document.getElementById('sub-picker-desc').innerText = `點選場下替補球員立刻對換；${target.name} 本場先休息，下一場會優先接續補進場上。`;
       document.getElementById('btn-leave-after-match').style.display = 'none';
       document.getElementById('sub-picker-buttons').innerHTML = availableSubs.map(sub => {
@@ -1643,7 +1430,7 @@
         target.left = false;
         target.skipCount = 0;
         renderRosterList();
-        showToast(`${target.name} 已重新加入輪替`);
+        showToast(`↩️ ${target.name} 已重新加入輪替`);
         return;
       }
 
@@ -1660,7 +1447,7 @@
           pendingSubSlotPos = slotPos;
           pendingSubMode = 'leave';
           const box = document.getElementById('sub-picker-box');
-          document.getElementById('sub-picker-title').innerText = `${target.name} 在場上準備離場，要派誰替補？`;
+          document.getElementById('sub-picker-title').innerText = `🏃 ${target.name} 在場上準備離場，要派誰替補？`;
           document.getElementById('sub-picker-desc').innerText = `請選擇場下候選人立刻接替上場，或讓其本局打完後再退場：`;
           document.getElementById('btn-leave-after-match').style.display = 'inline-block';
           document.getElementById('sub-picker-buttons').innerHTML = availableSubs.map(sub => {
@@ -1705,9 +1492,9 @@
       renderRosterList();
 
       if (modeUsed === 'skip_once') {
-        showToast(`已由 ${subName} 頂替上場（${outName} 下一場優先接續上場）`);
+        showToast(`🔄 已由 ${subName} 頂替上場（${outName} 下一場優先接續上場）`);
       } else {
-        showToast(`已由 ${subName} 接替上場（${outName} 設為離場）`);
+        showToast(`🔄 已由 ${subName} 接替上場（${outName} 設為離場）`);
       }
     }
 
@@ -1823,7 +1610,7 @@
       closeRosterModal();
       render(currentState, false);
       await saveStateToFirebase(currentState);
-      showToast('選手名單已更新並同步');
+      showToast('✅ 選手名單已更新並同步');
     }
 
     function parsePlayers(rawText) {
@@ -1955,7 +1742,7 @@
       render(currentState, false);
       await saveStateToFirebase(currentState);
       cleanupExpiredRooms();
-      showToast(`已在房號 [${ROOM_ID}] 開啟新賽局`);
+      showToast(`🚀 已在房號 [${ROOM_ID}] 開啟新賽局`);
     }
 
     // 勝利後進入下一場
@@ -2038,7 +1825,7 @@
         render(currentState, false);
         await saveStateToFirebase(currentState);
       } finally {
-        setTimeout(() => setBusyLock(false), 350);
+        setTimeout(() => setBusyLock(false), 400);
       }
     }
 
@@ -2124,40 +1911,8 @@
       return escapeHtml(name);
     }
 
-    function renderWatchShell(state) {
-      const teamA = state.teamAName || '藍隊';
-      const teamB = state.teamBName || '紅隊';
-      const isA = state.servingTeam === 'A';
-      const offenseName = isA ? teamA : teamB;
-
-      document.getElementById('watch-room-label').innerText = ROOM_ID || '未填房號';
-      document.getElementById('watch-score-a').innerText = state.scoreA;
-      document.getElementById('watch-score-b').innerText = state.scoreB;
-      document.getElementById('watch-score-a').classList.toggle('active-a', isA);
-      document.getElementById('watch-score-b').classList.toggle('active-b', !isA);
-      document.getElementById('watch-offense-tag').innerText = `● ${offenseName} 進攻・第 ${state.serverNumber} 發`;
-      document.getElementById('watch-teams-sub').innerText = `${teamA}  vs  ${teamB}`;
-      document.getElementById('watch-score-hint').innerText = `目前：${offenseName}`;
-      document.getElementById('watch-fault-hint').innerText = state.serverNumber === 1 ? '第 1 發失誤 → 第 2 發' : '第 2 發失誤 → 換邊發球';
-
-      const nextBtn = document.getElementById('watch-btn-next');
-      const scoreBtn = document.getElementById('watch-btn-score');
-      const faultBtn = document.getElementById('watch-btn-fault');
-      if (state.initialized && state.winner) {
-        nextBtn.classList.remove('hidden');
-        scoreBtn.classList.add('hidden');
-        faultBtn.classList.add('hidden');
-      } else {
-        nextBtn.classList.add('hidden');
-        scoreBtn.classList.remove('hidden');
-        faultBtn.classList.remove('hidden');
-      }
-    }
-
     // --- 畫面渲染與語音播報 ---
     function render(state, speak = false) {
-      renderWatchShell(state);
-
       const modeMap = { standard: '正規賽 (11分)', casual_seq: `休閒依序 (${state.targetScore}分)`, casual_rand: `休閒亂數 (${state.targetScore}分)` };
       document.getElementById('mode-badge').innerText = state.initialized ? (modeMap[state.mode] || '') : '';
 
@@ -2207,7 +1962,7 @@
         ctrlA.classList.remove('locked-defense');
         ctrlB.classList.add('locked-defense');
         ctrlB.classList.remove('active-offense');
-        document.getElementById('ctrl-title-a').innerText = `藍隊進攻中 (第 ${state.serverNumber} 發)`;
+        document.getElementById('ctrl-title-a').innerText = `🔥 藍隊進攻中 (第 ${state.serverNumber} 發)`;
         document.getElementById('ctrl-title-b').innerText = `藍隊發球中 (已鎖定)`;
       } else {
         panelB.classList.add('serving');
@@ -2221,7 +1976,7 @@
         ctrlB.classList.remove('locked-defense');
         ctrlA.classList.add('locked-defense');
         ctrlA.classList.remove('active-offense');
-        document.getElementById('ctrl-title-b').innerText = `紅隊進攻中 (第 ${state.serverNumber} 發)`;
+        document.getElementById('ctrl-title-b').innerText = `🔥 紅隊進攻中 (第 ${state.serverNumber} 發)`;
         document.getElementById('ctrl-title-a').innerText = `紅隊發球中 (已鎖定)`;
       }
 
@@ -2239,7 +1994,7 @@
       const victoryOverlay = document.getElementById('victory-overlay');
       if (state.initialized && state.winner) {
         const winTeamName = state.winner === 'A' ? state.teamAName : state.teamBName;
-        document.getElementById('victory-title').innerText = `${winTeamName} 獲勝！`;
+        document.getElementById('victory-title').innerText = `🎉 ${winTeamName} 獲勝！`;
         document.getElementById('victory-sub').innerText = `最終比數 ${state.scoreA} : ${state.scoreB}`;
         document.getElementById('btn-next-match').innerText = state.mode === 'standard' ? '▶️ 進入下一局 (記錄本局並歸零)' : '▶️ 進入下一場（記錄本局並輪替）';
         victoryOverlay.classList.remove('hidden');
@@ -2264,15 +2019,10 @@
       }
     }
 
-    // --- Firebase 雲端同步（含樂觀更新與指令通道） ---
+    // --- Firebase 雲端同步（含 Apple Watch 捷徑遠端指令處理） ---
     function setBusyLock(busy) {
       isActionBusy = busy;
       document.getElementById('remote-controls').classList.toggle('busy', busy);
-    }
-
-    function setConnStatus(online) {
-      document.getElementById('conn-dot').classList.toggle('offline', !online);
-      document.getElementById('watch-dot').classList.toggle('offline', !online);
     }
 
     async function fetchLatestStateFromFirebase() {
@@ -2280,10 +2030,10 @@
       try {
         const res = await fetchWithTimeout(`${FIREBASE_DB_URL}/rooms/${encodeURIComponent(ROOM_ID)}/state.json`);
         const data = await res.json();
-        setConnStatus(true);
+        document.getElementById('conn-dot').classList.remove('offline');
         return data;
       } catch (e) {
-        setConnStatus(false);
+        document.getElementById('conn-dot').classList.add('offline');
         return null;
       }
     }
@@ -2296,36 +2046,30 @@
           method: 'PUT',
           body: JSON.stringify(payload)
         });
-        setConnStatus(true);
+        document.getElementById('conn-dot').classList.remove('offline');
       } catch (e) {
-        setConnStatus(false);
+        document.getElementById('conn-dot').classList.add('offline');
       }
     }
 
     async function dispatchAction(action) {
-      if (!ROOM_ID) {
-        if (document.body.classList.contains('watch-mode')) {
-          document.getElementById('watch-room-editor').classList.remove('hidden');
-          showToast('請先輸入房號');
-        }
-        return;
-      }
-      if (isActionBusy) return;
+      if (isActionBusy || !ROOM_ID) return;
       setBusyLock(true);
       try {
         let normalizedAction = String(action || '').trim().toUpperCase();
         if (normalizedAction === 'POINT_A' || normalizedAction === 'POINT_B') normalizedAction = 'SCORE';
         if (normalizedAction === 'SIDE_OUT') normalizedAction = 'FAULT';
 
-        // 樂觀更新：先用本地目前狀態立刻算好並刷新畫面，減少手錶按鍵等待感
-        const optimisticState = processLogic(currentState, normalizedAction);
-        optimisticState.updatedAt = Date.now();
-        currentState = optimisticState;
-        render(currentState, true);
+        const latestRemote = await fetchLatestStateFromFirebase();
+        const baseState = (latestRemote && latestRemote.initialized) ? latestRemote : currentState;
 
+        const nextState = processLogic(baseState, normalizedAction);
+        nextState.updatedAt = Date.now();
+        currentState = nextState;
+        render(currentState, true);
         await saveStateToFirebase(currentState);
       } finally {
-        setTimeout(() => setBusyLock(false), 250);
+        setTimeout(() => setBusyLock(false), 350);
       }
     }
 
@@ -2341,9 +2085,7 @@
         return;
       }
       if (!ROOM_ID) {
-        if (document.body.classList.contains('watch-mode')) {
-          document.getElementById('watch-room-editor').classList.remove('hidden');
-        } else if (document.getElementById('lobby-modal').classList.contains('hidden')) {
+        if (document.getElementById('lobby-modal').classList.contains('hidden')) {
           openLobbyModal();
         }
         scheduleNextSync(1000);
@@ -2369,10 +2111,8 @@
 
         const remoteState = await fetchLatestStateFromFirebase();
         if (!remoteState || !remoteState.initialized) {
-          if (!document.body.classList.contains('watch-mode')) {
-            if (explicitJoin || document.getElementById('setup-modal').classList.contains('hidden')) {
-              openSetupModal();
-            }
+          if (explicitJoin || document.getElementById('setup-modal').classList.contains('hidden')) {
+            openSetupModal();
           }
           return;
         }
@@ -2391,7 +2131,7 @@
           }
         }
       } catch (e) {
-        setConnStatus(false);
+        document.getElementById('conn-dot').classList.add('offline');
       } finally {
         isSyncing = false;
         scheduleNextSync(800);
@@ -2405,15 +2145,9 @@
     });
 
     if (!ROOM_ID) {
-      if (document.body.classList.contains('watch-mode')) {
-        document.getElementById('watch-room-editor').classList.remove('hidden');
-        renderWatchShell(currentState);
-      } else {
-        openLobbyModal();
-      }
+      openLobbyModal();
       scheduleNextSync(1000);
     } else {
-      render(currentState, false);
       syncLoop(false);
     }
     cleanupExpiredRooms();
